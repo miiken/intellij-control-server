@@ -4,7 +4,7 @@ plugins {
     id("org.jetbrains.intellij") version "1.16.1"
 }
 
-group = "io.hibob.intellijcontrolserver"
+group = "io.miiken.intellijcontrolserver"
 version = "1.0.0"
 
 repositories {
@@ -14,6 +14,11 @@ repositories {
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+    
+    testImplementation("org.jetbrains.kotlin:kotlin-test")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
+    testImplementation("io.mockk:mockk:1.13.8")
 }
 
 intellij {
@@ -30,6 +35,10 @@ tasks {
     
     withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
         kotlinOptions.jvmTarget = "17"
+    }
+    
+    test {
+        useJUnitPlatform()
     }
 
     patchPluginXml {
