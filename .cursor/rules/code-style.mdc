@@ -390,6 +390,159 @@ private fun updateTask(data: Map<String, Any>) {
 
 If you write such a comment, stop and extract a method instead.
 
+## Testing
+
+### Testing Philosophy
+
+**Every unit of code should be unit-tested.** Tests are not optional, they are part of the implementation.
+
+### Testing Principles
+
+1. **Test-First Mindset**: Consider testability when writing code
+2. **High Coverage**: Aim for 80%+ code coverage
+3. **Fast Tests**: Unit tests should run in milliseconds
+4. **Independent Tests**: Each test should be isolated and not depend on others
+5. **Clear Test Names**: Test names should describe what they test and the expected outcome
+
+### Test Structure
+
+Use the **Given-When-Then** pattern (or Arrange-Act-Assert):
+
+```kotlin
+@Test
+fun `should return default config when file does not exist`() {
+    val nonExistentPath = "/path/that/does/not/exist.json"
+    
+    val result = ConfigLoader.load(nonExistentPath)
+    
+    assertEquals(ServerConfig.DEFAULT, result)
+}
+
+@Test
+fun `should validate port range`() {
+    val invalidConfig = ServerConfig(port = 100)
+    
+    val errors = invalidConfig.validate()
+    
+    assertTrue(errors.isNotEmpty())
+    assertTrue(errors.any { it.contains("Port must be between") })
+}
+```
+
+### Test Naming
+
+#### ✅ Good Test Names (Descriptive)
+```kotlin
+@Test
+fun `should start server on configured port`()
+
+@Test
+fun `should return error when config file is invalid JSON`()
+
+@Test
+fun `should create parent directories when saving config`()
+
+@Test
+fun `should send 405 error for non-GET requests to health endpoint`()
+```
+
+#### ❌ Bad Test Names (Unclear)
+```kotlin
+@Test
+fun testStart()
+
+@Test
+fun testConfig()
+
+@Test
+fun test1()
+```
+
+### What to Test
+
+#### Always Test:
+- **Public APIs**: All public methods
+- **Edge Cases**: Null values, empty collections, boundary conditions
+- **Error Handling**: Exception cases, invalid input
+- **Business Logic**: Core functionality and validations
+- **State Changes**: Before and after state verification
+
+#### Example: Testing a Service
+```kotlin
+class ConfigLoaderTest {
+    @Test
+    fun `should load valid config from file`() {
+        // Test happy path
+    }
+    
+    @Test
+    fun `should return default config when file not found`() {
+        // Test missing file
+    }
+    
+    @Test
+    fun `should return default config when JSON is malformed`() {
+        // Test invalid JSON
+    }
+    
+    @Test
+    fun `should validate config and return errors`() {
+        // Test validation
+    }
+    
+    @Test
+    fun `should save config to file successfully`() {
+        // Test saving
+    }
+    
+    @Test
+    fun `should create parent directories when saving`() {
+        // Test directory creation
+    }
+}
+```
+
+### Mocking and Test Doubles
+
+Use mocks for external dependencies, but prefer real objects when possible:
+
+```kotlin
+@Test
+fun `should log error when server fails to start`() {
+    val mockLogger = mock<Logger>()
+    val invalidConfig = ServerConfig(port = -1)
+    
+    val server = ControlServer(invalidConfig, mockLogger)
+    
+    assertThrows<RuntimeException> { server.start() }
+    verify(mockLogger).error(contains("Failed to start"))
+}
+```
+
+### Test Organization
+
+```
+src/test/kotlin/io/miiken/intellijcontrolserver/
+├── config/
+│   ├── ServerConfigTest.kt
+│   └── ConfigLoaderTest.kt
+├── server/
+│   ├── ResponseBuilderTest.kt
+│   └── handlers/
+│       └── HealthHandlerTest.kt
+├── ControlServerTest.kt
+└── ControlServerServiceTest.kt
+```
+
+### Testing Checklist
+
+For each class, ensure you test:
+- [ ] Happy path (normal operation)
+- [ ] Edge cases (boundary values, empty inputs)
+- [ ] Error cases (exceptions, invalid input)
+- [ ] State transitions (before/after)
+- [ ] Public methods (all public APIs)
+
 ## Summary
 
 **Core Principle**: Write code that reads like well-written prose. If you need a comment to explain what the code does, refactor the code instead.
