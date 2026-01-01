@@ -1,0 +1,63 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <id>io.hibob.intellij-control-server</id>
+    <name>IntelliJ Control Server</name>
+    <vendor email="avner.linder@gmail.com" url="https://github.com/miiken/intellij-control-server">miiken</vendor>
+
+    <description><![CDATA[
+    A lightweight IntelliJ IDEA plugin that exposes IDE capabilities via a local HTTP API.
+    
+    <h3>Features</h3>
+    <ul>
+        <li><strong>Tasks & Context Management</strong>: Manage IntelliJ tasks and editor contexts via API</li>
+        <li><strong>Refactoring Operations</strong>: Trigger rename, extract method, move class, and other refactorings</li>
+        <li><strong>Navigation</strong>: Open files, jump to definitions, find usages programmatically</li>
+        <li><strong>AI-Friendly</strong>: Perfect for integration with AI coding assistants like Cursor</li>
+    </ul>
+    
+    <h3>How it Works</h3>
+    <p>
+    The plugin runs a local HTTP server (default: http://localhost:8765) that accepts JSON requests.
+    This enables external tools to control IntelliJ operations without manual intervention.
+    </p>
+    
+    <h3>Security</h3>
+    <ul>
+        <li>Binds to localhost only (127.0.0.1)</li>
+        <li>No authentication required (trusted local environment)</li>
+        <li>File access restricted to open project</li>
+    </ul>
+    
+    <p>
+    For documentation and examples, visit the <a href="https://github.com/miiken/intellij-control-server">GitHub repository</a>.
+    </p>
+    ]]></description>
+
+    <change-notes><![CDATA[
+    <h3>1.0.0</h3>
+    <ul>
+        <li>Initial release</li>
+        <li>HTTP server with health check endpoint</li>
+        <li>Tasks API for task management and context switching</li>
+        <li>Refactoring API (rename, extract method, extract variable, move class, inline)</li>
+        <li>Navigation API (open file, jump to definition, find usages, project structure)</li>
+    </ul>
+    ]]></change-notes>
+
+    <!-- Plugin depends on IntelliJ Platform modules -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.modules.java</depends>
+    <depends>com.intellij.tasks</depends>
+
+    <!-- Extension points and services -->
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Application-level service (singleton) -->
+        <applicationService serviceImplementation="io.hibob.intellijcontrolserver.ControlServerService"/>
+    </extensions>
+
+    <applicationListeners>
+        <listener class="io.hibob.intellijcontrolserver.ControlServerApplicationListener"
+                  topic="com.intellij.ide.AppLifecycleListener"/>
+    </applicationListeners>
+</idea-plugin>
+
