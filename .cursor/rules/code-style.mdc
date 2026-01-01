@@ -226,6 +226,92 @@ private fun validateRequest(body: String): ValidationError? {
 }
 ```
 
+## Architecture Principles
+
+### Logging and Debugging
+
+**Always use IntelliJ's Logger for debug output, never write directly to files or use println.**
+
+#### ❌ Bad (Direct file I/O or println)
+```kotlin
+println("User ID: $userId")
+System.out.println("Processing request...")
+java.io.File("debug.log").appendText("Value: $value\n")
+```
+
+#### ✅ Good (Using Logger)
+```kotlin
+class MyService {
+    private val logger = Logger.getInstance(MyService::class.java)
+    
+    fun processRequest(userId: String) {
+        logger.info("Processing request for user: $userId")
+        logger.debug("Detailed info: ${someComplexObject}")
+        logger.warn("Potential issue detected")
+        logger.error("Operation failed", exception)
+    }
+}
+```
+
+**Why?**
+- **Centralized**: All logs go to IntelliJ's log system (visible in IDE logs)
+- **Configurable**: Log levels can be adjusted without code changes
+- **Structured**: Proper timestamps, thread info, and context automatically included
+- **Performance**: Logger respects log levels and can be disabled in production
+
+**Debug instrumentation format:**
+```kotlin
+// #region agent log
+logger.info("[DEBUG] [H:A,B] Description: key1=value1, key2=value2")
+// #endregion
+```
+
+### Stateless Design
+
+**Controllers and Services must be stateless.** They should not hold project references, lists, or any other state.
+
+#### ❌ Bad (Holding state)
+```kotlin
+class RefactoringService(private val project: Project) {
+    fun rename(request: RenameRequest): RefactoringResult {
+        val psiFile = PsiUtils.findPsiFile(project, request.filePath)
+        // ...
+    }
+}
+
+// Usage:
+val service = RefactoringService(project)
+val result = service.rename(request)
+```
+
+#### ✅ Good (Stateless)
+```kotlin
+object RefactoringService {
+    fun rename(project: Project, request: RenameRequest): RefactoringResult {
+        val psiFile = PsiUtils.findPsiFile(project, request.filePath)
+        // ...
+    }
+}
+
+// Usage:
+val result = RefactoringService.rename(project, request)
+```
+
+**Why?**
+- **Thread Safety**: Stateless objects are inherently thread-safe
+- **Reusability**: Can be used from multiple threads/contexts
+- **Testability**: Easier to test without managing state
+- **Lifecycle**: No need to manage object lifecycle and disposal
+
+**What to pass as parameters instead:**
+- `Project` instances
+- Configuration objects
+- Context-specific data
+
+**What to use for shared resources:**
+- `object` for singletons with no state
+- Application/Project services for properly managed shared state
+
 ## Code Organization
 
 ### File Structure
@@ -234,12 +320,12 @@ Each file should have a clear purpose:
 
 ```kotlin
 // 1. Package declaration
-package io.hibob.intellijcontrolserver.server
+package io.miiken.intellijcontrolserver.server
 
 // 2. Imports (sorted)
 import com.intellij.openapi.diagnostic.Logger
 import com.sun.net.httpserver.HttpExchange
-import io.hibob.intellijcontrolserver.config.ServerConfig
+import io.miiken.intellijcontrolserver.config.ServerConfig
 
 // 3. Class/Object declaration with KDoc
 /**
@@ -542,6 +628,88 @@ For each class, ensure you test:
 - [ ] Error cases (exceptions, invalid input)
 - [ ] State transitions (before/after)
 - [ ] Public methods (all public APIs)
+
+### IntelliJ Platform Tests
+
+**When to use IntelliJ Test Harness:**
+
+Tests that interact with IntelliJ Platform APIs (Project, PSI, VirtualFile, etc.) require the IntelliJ Test Framework. These tests extend `BasePlatformTestCase` or similar test fixtures.
+
+#### Example Platform Test
+```kotlin
+class RefactoringServicePlatformTest : BasePlatformTestCase() {
+    
+    fun `test rename variable in kotlin file`() {
+        val testFile = myFixture.configureByText("Test.kt", """
+            fun main() {
+                val name = "test"
+                println(name)
+            }
+        """.trimIndent())
+        
+        val offset = testFile.text.indexOf("name")
+        val request = RenameRequest(
+            filePath = testFile.virtualFile.path,
+            offset = offset,
+            oldName = "name",
+            newName = "greeting"
+        )
+        
+        val result = RefactoringService.rename(myFixture.project, request)
+        
+        assertTrue(result.success)
+        myFixture.checkResult("""
+            fun main() {
+                val greeting = "test"
+                println(greeting)
+            }
+        """.trimIndent())
+    }
+}
+```
+
+#### Platform Test Limitations
+
+- **Complex Setup**: Requires IntelliJ Platform initialization (can be brittle)
+- **Slow**: Platform tests are significantly slower than unit tests (seconds vs milliseconds)
+- **Version-Specific**: Test harness configuration changes between IntelliJ versions
+- **Debugging**: Harder to debug failures due to complex IDE infrastructure
+
+#### Testing Strategy
+
+For IntelliJ plugin development, use a **layered testing approach**:
+
+1. **Unit Tests** (Fast, 80% of tests)
+   - Configuration, validation, data models
+   - HTTP request/response handling
+   - Business logic without IDE dependencies
+   - Use mocks/test doubles for external dependencies
+
+2. **Integration Tests** (Medium, 15% of tests)
+   - Controller → Service → Utility integration
+   - End-to-end API flows (without PSI)
+   - Test with real HTTP requests when possible
+
+3. **Platform Tests** (Slow, 5% of tests)
+   - PSI manipulation (refactoring, navigation)
+   - IDE-specific integrations
+   - Use `@Disabled` if test harness setup is incomplete
+   - Document E2E validation as alternative
+
+4. **Manual E2E Tests** (Sandbox IDE)
+   - Run plugin in sandbox: `./gradlew runIde`
+   - Test real-world scenarios
+   - Validate complex interactions
+   - Verify UI/UX flows
+
+#### Current Status
+
+As of January 2026:
+- ✅ **50 unit tests** covering 89% of testable code
+- ⏳ **6 platform tests** currently `@Disabled` (validated via sandbox IDE)
+- ✅ **E2E validation** completed for all critical flows
+
+See `.cursor/TEST-COVERAGE.md` for detailed coverage report.
 
 ## Summary
 

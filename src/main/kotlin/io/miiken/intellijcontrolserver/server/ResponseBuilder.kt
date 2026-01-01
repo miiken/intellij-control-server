@@ -19,7 +19,7 @@ object ResponseBuilder {
      */
     fun sendSuccess(exchange: HttpExchange, data: Any, statusCode: Int = 200) {
         val response = mapOf("success" to true) + when (data) {
-            is Map<*, *> -> data as Map<String, Any>
+            is Map<*, *> -> @Suppress("UNCHECKED_CAST") (data as Map<String, Any>)
             else -> mapOf("data" to data)
         }
         sendJson(exchange, response, statusCode)
@@ -108,6 +108,7 @@ object ResponseBuilder {
      * @param exchange HTTP exchange
      * @return Map of request data
      */
+    @Suppress("UNCHECKED_CAST")
     fun parseJsonMap(exchange: HttpExchange): Map<String, Any> {
         val body = exchange.requestBody.bufferedReader().use { it.readText() }
         return gson.fromJson(body, Map::class.java) as Map<String, Any>

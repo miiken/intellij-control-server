@@ -92,17 +92,17 @@ _None - Phase 1 complete!_
 ## Files Created
 
 ### Configuration
-- `src/main/kotlin/io/hibob/intellijcontrolserver/config/ServerConfig.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/config/ConfigLoader.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/config/ServerConfig.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/config/ConfigLoader.kt`
 
 ### Server
-- `src/main/kotlin/io/hibob/intellijcontrolserver/ControlServer.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/ResponseBuilder.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/HealthHandler.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/ControlServer.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/ResponseBuilder.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/HealthHandler.kt`
 
 ### Service & Lifecycle
-- `src/main/kotlin/io/hibob/intellijcontrolserver/ControlServerService.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/ControlServerApplicationListener.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/ControlServerService.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/ControlServerApplicationListener.kt`
 
 ### Resources
 - `src/main/resources/META-INF/plugin.xml`

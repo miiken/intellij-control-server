@@ -15,7 +15,7 @@
 
 ### 1.2 Plugin Descriptor
 - [ ] Create/update `plugin.xml` with metadata
-- [ ] Define plugin ID: `io.hibob.intellij-control-server`
+- [ ] Define plugin ID: `io.miiken.intellij-control-server`
 - [ ] Set plugin name and description
 - [ ] Configure application service
 - [ ] Set compatibility version range
@@ -30,7 +30,7 @@
 - [ ] Fields: `port`, `host`, `autoStart`, `logLevel`, `enableCors`
 - [ ] Default values defined
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/config/ServerConfig.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/config/ServerConfig.kt`
 
 ### 2.2 Config Loading
 - [ ] Create `ConfigLoader` service
@@ -52,7 +52,7 @@
 - [ ] Start server in `init` block
 - [ ] Implement `Disposable` for cleanup
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/ControlServer.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/ControlServer.kt`
 
 ### 3.2 Handler Registration
 - [ ] Create handler registration system
@@ -73,7 +73,7 @@
 - [ ] Return JSON response with status, version, uptime
 - [ ] Set correct Content-Type header
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/HealthHandler.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/HealthHandler.kt`
 
 **Response Format**:
 ```json
@@ -90,7 +90,7 @@
 - [ ] Helper for error responses
 - [ ] Set standard headers (Content-Type, CORS)
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/server/ResponseBuilder.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/server/ResponseBuilder.kt`
 
 ## 5. Logging Infrastructure
 
@@ -142,7 +142,7 @@
 - [ ] Dispose server on component disposal
 - [ ] Handle initialization errors gracefully
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/IntelliJControlServerPlugin.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/IntelliJControlServerPlugin.kt`
 
 ### 7.2 Startup Notification
 - [ ] Log plugin version on startup
@@ -163,7 +163,7 @@
 - [ ] Test `HealthHandler` response format
 - [ ] Test `ResponseBuilder` utilities
 
-**File**: `src/test/kotlin/io/hibob/intellijcontrolserver/config/ConfigLoaderTest.kt`
+**File**: `src/test/kotlin/io/miiken/intellijcontrolserver/config/ConfigLoaderTest.kt`
 
 ## 9. Documentation
 

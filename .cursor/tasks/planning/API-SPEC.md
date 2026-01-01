@@ -291,7 +291,7 @@ Move class to different package.
 ```json
 {
   "filePath": "src/main/kotlin/Service.kt",
-  "targetPackage": "com.hibob.employee.service"
+  "targetPackage": "com.miiken.employee.service"
 }
 ```
 
@@ -301,12 +301,12 @@ Move class to different package.
   "success": true,
   "operation": "move-class",
   "className": "EmployeeService",
-  "oldPackage": "com.hibob.service",
-  "newPackage": "com.hibob.employee.service",
+  "oldPackage": "com.miiken.service",
+  "newPackage": "com.miiken.employee.service",
   "oldPath": "src/main/kotlin/Service.kt",
-  "newPath": "src/main/kotlin/com/hibob/employee/service/EmployeeService.kt",
+  "newPath": "src/main/kotlin/com/miiken/employee/service/EmployeeService.kt",
   "filesChanged": [
-    "src/main/kotlin/com/hibob/employee/service/EmployeeService.kt",
+    "src/main/kotlin/com/miiken/employee/service/EmployeeService.kt",
     "src/main/kotlin/Controller.kt",
     "src/test/kotlin/EmployeeServiceTest.kt"
   ]
@@ -447,13 +447,13 @@ Get project structure (packages, files).
   "project": "payroll-hub-data",
   "structure": {
     "src/main/kotlin": {
-      "com/hibob/employee": {
+      "com/miiken/employee": {
         "files": ["Employee.kt", "EmployeeService.kt"],
         "subpackages": ["dto", "repository"]
       }
     },
     "src/test/kotlin": {
-      "com/hibob/employee": {
+      "com/miiken/employee": {
         "files": ["EmployeeServiceTest.kt"]
       }
     }

@@ -67,7 +67,7 @@ curl -X POST http://localhost:8765/refactor/move-class \
   -H "Content-Type: application/json" \
   -d '{
     "filePath": "src/main/kotlin/Service.kt",
-    "targetPackage": "com.hibob.employee.service"
+    "targetPackage": "com.miiken.employee.service"
   }'
 ```
 
@@ -84,9 +84,9 @@ curl -X POST http://localhost:8765/refactor/inline \
 
 ## Key Files to Create
 
-- `src/main/kotlin/io/hibob/intellijcontrolserver/services/RefactoringService.kt` (extend)
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/RefactoringHandler.kt` (extend)
-- `src/main/kotlin/io/hibob/intellijcontrolserver/model/RefactoringRequest.kt` (extend)
+- `src/main/kotlin/io/miiken/intellijcontrolserver/services/RefactoringService.kt` (extend)
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/RefactoringHandler.kt` (extend)
+- `src/main/kotlin/io/miiken/intellijcontrolserver/model/RefactoringRequest.kt` (extend)
 
 ## IntelliJ APIs Used
 

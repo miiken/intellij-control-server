@@ -106,7 +106,7 @@ curl http://localhost:8765/navigation/project-structure?depth=3
   "project": "payroll-hub-data",
   "structure": {
     "src/main/kotlin": {
-      "com/hibob/employee": {
+      "com/miiken/employee": {
         "files": ["Employee.kt", "EmployeeService.kt"],
         "subpackages": ["dto", "repository"]
       }
@@ -117,10 +117,10 @@ curl http://localhost:8765/navigation/project-structure?depth=3
 
 ## Key Files to Create
 
-- `src/main/kotlin/io/hibob/intellijcontrolserver/services/NavigationService.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/NavigationHandler.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/model/NavigationRequest.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/model/UsageInfo.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/services/NavigationService.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/NavigationHandler.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/model/NavigationRequest.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/model/UsageInfo.kt`
 
 ## IntelliJ APIs Used
 

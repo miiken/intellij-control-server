@@ -18,7 +18,7 @@ intellij-control-server/
 │   ├── IMPLEMENTATION-PLAN.md          # Development roadmap
 │   └── USE-CASES.md                    # Real-world examples
 ├── src/main/kotlin/                    # Source code (to be implemented)
-│   └── io/hibob/intellijcontrolserver/
+│   └── io/miiken/intellijcontrolserver/
 │       ├── server/                     # HTTP server
 │       │   └── handlers/               # Request handlers
 │       └── services/                   # Service layer
@@ -165,7 +165,7 @@ IntelliJ IDEA (Tasks, Refactoring, Navigation)
 
 ```bash
 # 1. Make changes in src/main/kotlin
-vim src/main/kotlin/io/hibob/intellijcontrolserver/ControlServer.kt
+vim src/main/kotlin/io/miiken/intellijcontrolserver/ControlServer.kt
 
 # 2. Run tests
 ./gradlew test

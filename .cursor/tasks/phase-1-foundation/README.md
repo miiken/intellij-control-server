@@ -42,10 +42,10 @@ curl http://localhost:8765/health
 
 ## Key Files to Create
 
-- `src/main/kotlin/io/hibob/intellijcontrolserver/ControlServer.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/HttpServer.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/HealthHandler.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/config/ServerConfig.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/ControlServer.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/HttpServer.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/HealthHandler.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/config/ServerConfig.kt`
 - `src/main/resources/META-INF/plugin.xml`
 
 ## Dependencies

@@ -173,11 +173,27 @@
               "schema": {
                 "$ref": "#/components/schemas/ExtractMethodRequest"
               },
-              "example": {
-                "filePath": "src/main/kotlin/com/example/Service.kt",
-                "startOffset": 200,
-                "endOffset": 350,
-                "methodName": "calculateTotal"
+              "examples": {
+                "basic": {
+                  "summary": "Basic extraction (IntelliJ decides parameter order)",
+                  "value": {
+                    "filePath": "src/main/kotlin/com/example/Service.kt",
+                    "startOffset": 200,
+                    "endOffset": 350,
+                    "methodName": "calculateTotal"
+                  }
+                },
+                "withParameterOrder": {
+                  "summary": "Extraction with custom parameter order",
+                  "value": {
+                    "filePath": "src/main/kotlin/com/example/Service.kt",
+                    "startOffset": 200,
+                    "endOffset": 350,
+                    "methodName": "calculateTotal",
+                    "parameterOrder": ["userId", "amount", "currency"],
+                    "visibility": "private"
+                  }
+                }
               }
             }
           }
@@ -315,6 +331,21 @@
             "type": "string",
             "description": "Name for the extracted method",
             "example": "calculateTotal"
+          },
+          "parameterOrder": {
+            "type": "array",
+            "description": "Optional. Specify the order of parameters in the extracted method. If provided, IntelliJ will reorder the detected parameters to match this list. If omitted, IntelliJ uses its default ordering (usually by first usage). Each item should be the variable name.",
+            "items": {
+              "type": "string"
+            },
+            "example": ["userId", "amount", "currency"]
+          },
+          "visibility": {
+            "type": "string",
+            "description": "Optional. Method visibility modifier. Defaults to 'private'.",
+            "enum": ["private", "protected", "public", "internal"],
+            "default": "private",
+            "example": "private"
           }
         }
       },

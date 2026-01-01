@@ -30,7 +30,7 @@
 - [ ] Return safe error responses
 - [ ] Never expose internal details
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/server/ExceptionHandler.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/server/ExceptionHandler.kt`
 
 ### 1.3 Error Code Documentation
 - [ ] Document all error codes
@@ -55,7 +55,7 @@
 - [ ] Validate names (legal identifiers)
 - [ ] Validate required fields
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/validation/RequestValidator.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/validation/RequestValidator.kt`
 
 ```kotlin
 object RequestValidator {
@@ -91,7 +91,7 @@ object RequestValidator {
 - [ ] Cache project structure queries
 - [ ] Implement LRU cache for hot paths
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/cache/PsiCache.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/cache/PsiCache.kt`
 
 ### 3.3 Async Operations
 - [ ] Make long operations async where possible
@@ -125,7 +125,7 @@ object RequestValidator {
 - [ ] Create settings panel UI
 - [ ] Save/load settings
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/ui/SettingsConfigurable.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/ui/SettingsConfigurable.kt`
 
 ### 4.2 Settings Panel
 - [ ] Port number field
@@ -337,7 +337,7 @@ ij-rename() {
 ## 8. Beta Testing
 
 ### 8.1 Internal Testing
-- [ ] Test with Hibob team
+- [ ] Test with your team
 - [ ] Collect feedback
 - [ ] Fix critical bugs
 - [ ] Iterate on UX

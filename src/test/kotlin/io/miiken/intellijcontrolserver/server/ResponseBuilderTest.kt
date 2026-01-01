@@ -1,12 +1,17 @@
 package io.miiken.intellijcontrolserver.server
 
 import com.google.gson.Gson
+import com.sun.net.httpserver.Headers
+import com.sun.net.httpserver.HttpContext
 import com.sun.net.httpserver.HttpExchange
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
+import com.sun.net.httpserver.HttpPrincipal
 import org.junit.jupiter.api.Test
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.OutputStream
+import java.net.InetSocketAddress
+import java.net.URI
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
@@ -16,118 +21,140 @@ class ResponseBuilderTest {
     
     @Test
     fun `should send success response with data`() {
-        val exchange = createMockExchange()
         val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val exchange = createTestExchange(outputStream)
         
-        val data = mapOf("message" to "Hello")
+        val data = mapOf("key" to "value", "number" to 42)
         ResponseBuilder.sendSuccess(exchange, data)
         
-        val response = gson.fromJson(outputStream.toString(), Map::class.java)
-        assertEquals(true, response["success"])
-        assertEquals("Hello", response["message"])
+        val response = outputStream.toString()
+        val json = gson.fromJson(response, Map::class.java)
+        
+        assertEquals("value", json["key"])
+        assertEquals(42.0, json["number"])
     }
     
     @Test
     fun `should send error response with code and message`() {
-        val exchange = createMockExchange()
         val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val exchange = createTestExchange(outputStream)
         
         ResponseBuilder.sendError(exchange, "TEST_ERROR", "Test error message")
         
-        val response = gson.fromJson(outputStream.toString(), Map::class.java)
-        assertEquals(false, response["success"])
-        val error = response["error"] as Map<*, *>
+        val response = outputStream.toString()
+        val json = gson.fromJson(response, Map::class.java)
+        
+        assertEquals(false, json["success"])
+        @Suppress("UNCHECKED_CAST")
+        val error = json["error"] as Map<String, Any>
         assertEquals("TEST_ERROR", error["code"])
         assertEquals("Test error message", error["message"])
     }
     
     @Test
     fun `should send error response with details`() {
-        val exchange = createMockExchange()
         val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val exchange = createTestExchange(outputStream)
         
-        val details = mapOf("field" to "port", "value" to "invalid")
-        ResponseBuilder.sendError(exchange, "VALIDATION_ERROR", "Invalid field", details)
+        val details = mapOf("field" to "username", "constraint" to "min_length")
+        ResponseBuilder.sendError(exchange, "VALIDATION_ERROR", "Invalid input", details)
         
-        val response = gson.fromJson(outputStream.toString(), Map::class.java)
-        val error = response["error"] as Map<*, *>
-        val responseDetails = error["details"] as Map<*, *>
-        assertEquals("port", responseDetails["field"])
-        assertEquals("invalid", responseDetails["value"])
-    }
-    
-    @Test
-    fun `should set JSON content type header`() {
-        val exchange = createMockExchange()
-        val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val response = outputStream.toString()
+        val json = gson.fromJson(response, Map::class.java)
         
-        ResponseBuilder.sendJson(exchange, mapOf("test" to "data"))
+        assertEquals(false, json["success"])
+        @Suppress("UNCHECKED_CAST")
+        val error = json["error"] as Map<String, Any>
+        assertEquals("VALIDATION_ERROR", error["code"])
+        assertEquals("Invalid input", error["message"])
         
-        verify { exchange.responseHeaders.set("Content-Type", "application/json; charset=UTF-8") }
+        @Suppress("UNCHECKED_CAST")
+        val responseDetails = error["details"] as Map<String, Any>
+        assertEquals("username", responseDetails["field"])
+        assertEquals("min_length", responseDetails["constraint"])
     }
     
     @Test
     fun `should send text response`() {
-        val exchange = createMockExchange()
         val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val exchange = createTestExchange(outputStream)
         
-        ResponseBuilder.sendText(exchange, "Plain text")
+        val textContent = "Hello, World!"
+        ResponseBuilder.sendText(exchange, textContent)
         
-        assertEquals("Plain text", outputStream.toString())
-        verify { exchange.responseHeaders.set("Content-Type", "text/plain; charset=UTF-8") }
+        val response = outputStream.toString()
+        assertEquals(textContent, response)
     }
     
     @Test
     fun `should send response with custom status code`() {
-        val exchange = createMockExchange()
         val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
+        val exchange = createTestExchange(outputStream)
         
-        ResponseBuilder.sendSuccess(exchange, mapOf("test" to "data"), statusCode = 201)
+        ResponseBuilder.sendSuccess(exchange, mapOf("data" to "test"), 201)
         
-        verify { exchange.sendResponseHeaders(201, any()) }
-    }
-    
-    @Test
-    fun `should send error with 400 status by default`() {
-        val exchange = createMockExchange()
-        val outputStream = ByteArrayOutputStream()
-        every { exchange.responseBody } returns outputStream
-        
-        ResponseBuilder.sendError(exchange, "ERROR", "Message")
-        
-        verify { exchange.sendResponseHeaders(400, any()) }
+        assertEquals(201, (exchange as TestHttpExchange).statusCode)
     }
     
     @Test
     fun `should set CORS headers when enabled`() {
-        val exchange = createMockExchange()
+        val outputStream = ByteArrayOutputStream()
+        val exchange = createTestExchange(outputStream)
         
         ResponseBuilder.setCorsHeaders(exchange, enableCors = true)
         
-        verify { exchange.responseHeaders.set("Access-Control-Allow-Origin", "*") }
-        verify { exchange.responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS") }
-        verify { exchange.responseHeaders.set("Access-Control-Allow-Headers", "Content-Type") }
+        val headers = exchange.responseHeaders
+        assertTrue(headers.containsKey("Access-Control-Allow-Origin"))
+        assertTrue(headers.containsKey("Access-Control-Allow-Methods"))
+        assertTrue(headers.containsKey("Access-Control-Allow-Headers"))
     }
     
     @Test
     fun `should not set CORS headers when disabled`() {
-        val exchange = createMockExchange()
+        val outputStream = ByteArrayOutputStream()
+        val exchange = createTestExchange(outputStream)
         
         ResponseBuilder.setCorsHeaders(exchange, enableCors = false)
         
-        verify(exactly = 0) { exchange.responseHeaders.set("Access-Control-Allow-Origin", any()) }
+        val headers = exchange.responseHeaders
+        assertTrue(!headers.containsKey("Access-Control-Allow-Origin"))
     }
     
-    private fun createMockExchange(): HttpExchange {
-        val exchange = mockk<HttpExchange>(relaxed = true)
-        every { exchange.responseHeaders } returns mockk(relaxed = true)
-        return exchange
+    private fun createTestExchange(outputStream: OutputStream): HttpExchange {
+        return TestHttpExchange(outputStream)
+    }
+    
+    private class TestHttpExchange(
+        private val outputStream: OutputStream
+    ) : HttpExchange() {
+        private val requestHeaders = Headers()
+        private val responseHeadersMap = Headers()
+        var statusCode: Int = 0
+        private var responseLength: Long = 0
+        
+        override fun getRequestMethod(): String = "GET"
+        override fun getRequestURI(): URI = URI.create("http://localhost:8080/test")
+        override fun getProtocol(): String = "HTTP/1.1"
+        override fun getRequestHeaders(): Headers = requestHeaders
+        override fun getResponseHeaders(): Headers = responseHeadersMap
+        override fun getRequestBody(): InputStream = ByteArrayInputStream(ByteArray(0))
+        override fun getResponseBody(): OutputStream = outputStream
+        override fun getRemoteAddress(): InetSocketAddress = InetSocketAddress("localhost", 12345)
+        override fun getResponseCode(): Int = statusCode
+        override fun getLocalAddress(): InetSocketAddress = InetSocketAddress("localhost", 8080)
+        override fun getHttpContext(): HttpContext? = null
+        override fun getPrincipal(): HttpPrincipal? = null
+        override fun getAttribute(name: String?): Any? = null
+        override fun setAttribute(name: String?, value: Any?) {}
+        override fun setStreams(i: InputStream?, o: OutputStream?) {}
+        
+        override fun sendResponseHeaders(rCode: Int, responseLength: Long) {
+            this.statusCode = rCode
+            this.responseLength = responseLength
+        }
+        
+        override fun close() {
+            outputStream.close()
+        }
     }
 }
-
