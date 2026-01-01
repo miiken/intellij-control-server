@@ -1,0 +1,423 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "IntelliJ Control Server API",
+    "description": "HTTP API for programmatic control of IntelliJ IDEA operations. Enables AI tools like Cursor to perform refactoring, navigation, and task management operations.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "IntelliJ Control Server",
+      "url": "https://github.com/miiken/intellij-control-server"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:8765",
+      "description": "Local IntelliJ instance (default port)"
+    },
+    {
+      "url": "http://127.0.0.1:{port}",
+      "description": "Local IntelliJ instance (custom port)",
+      "variables": {
+        "port": {
+          "default": "8765",
+          "description": "Configured port in plugin settings"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "health",
+      "description": "Health check and server status"
+    },
+    {
+      "name": "refactoring",
+      "description": "Code refactoring operations (rename, extract method, etc.)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Health check",
+        "description": "Check if the server is running and get uptime information",
+        "operationId": "healthCheck",
+        "responses": {
+          "200": {
+            "description": "Server is healthy",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                },
+                "example": {
+                  "success": true,
+                  "status": "ok",
+                  "version": "1.0.0",
+                  "uptime": 3600,
+                  "timestamp": 1735725521000
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/refactor/rename": {
+      "post": {
+        "tags": ["refactoring"],
+        "summary": "Rename symbol",
+        "description": "Rename a class, method, variable, or parameter across all usages in the project. Performs conflict detection before renaming.",
+        "operationId": "rename",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameRequest"
+              },
+              "example": {
+                "filePath": "src/main/kotlin/com/example/Service.kt",
+                "offset": 150,
+                "oldName": "Service",
+                "newName": "UserService"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Rename successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefactoringSuccess"
+                },
+                "example": {
+                  "success": true,
+                  "filesChanged": [
+                    "src/main/kotlin/com/example/Service.kt",
+                    "src/main/kotlin/com/example/Controller.kt",
+                    "src/test/kotlin/com/example/ServiceTest.kt"
+                  ],
+                  "changesCount": 12
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rename failed (conflict or invalid input)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "nameCollision": {
+                    "summary": "Name already exists",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "NAME_COLLISION",
+                        "message": "Name 'UserService' already exists",
+                        "details": {
+                          "conflictType": "NAME_COLLISION",
+                          "existingElement": "src/other/UserService.kt",
+                          "suggestedNames": ["UserServiceImpl", "UserServiceNew"]
+                        }
+                      }
+                    }
+                  },
+                  "invalidElement": {
+                    "summary": "Element cannot be renamed",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "INVALID_ELEMENT",
+                        "message": "Element at offset 150 is not renameable"
+                      }
+                    }
+                  },
+                  "nameMismatch": {
+                    "summary": "Name at offset doesn't match expected",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "NAME_MISMATCH",
+                        "message": "Expected 'Service' at offset 150, but found 'UserService'. File may have changed.",
+                        "details": {
+                          "expectedName": "Service",
+                          "actualName": "UserService",
+                          "offset": 150
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/refactor/extract-method": {
+      "post": {
+        "tags": ["refactoring"],
+        "summary": "Extract method",
+        "description": "Extract selected code into a new method. Automatically handles parameters and return type.",
+        "operationId": "extractMethod",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExtractMethodRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Basic extraction (IntelliJ decides parameter order)",
+                  "value": {
+                    "filePath": "src/main/kotlin/com/example/Service.kt",
+                    "startOffset": 200,
+                    "endOffset": 350,
+                    "methodName": "calculateTotal"
+                  }
+                },
+                "withParameterOrder": {
+                  "summary": "Extraction with custom parameter order",
+                  "value": {
+                    "filePath": "src/main/kotlin/com/example/Service.kt",
+                    "startOffset": 200,
+                    "endOffset": 350,
+                    "methodName": "calculateTotal",
+                    "parameterOrder": ["userId", "amount", "currency"],
+                    "visibility": "private"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Extract method successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RefactoringSuccess"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Extract method failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "tags": ["health"],
+        "summary": "OpenAPI specification",
+        "description": "Get the OpenAPI 3.0 specification for this API (this document)",
+        "operationId": "getOpenApiSpec",
+        "responses": {
+          "200": {
+            "description": "OpenAPI specification",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HealthResponse": {
+        "type": "object",
+        "required": ["success", "status", "version", "uptime", "timestamp"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always true for successful health check",
+            "example": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Server status",
+            "example": "ok"
+          },
+          "version": {
+            "type": "string",
+            "description": "Plugin version",
+            "example": "1.0.0"
+          },
+          "uptime": {
+            "type": "integer",
+            "description": "Server uptime in seconds",
+            "example": 3600
+          },
+          "timestamp": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Current timestamp in milliseconds",
+            "example": 1735725521000
+          }
+        }
+      },
+      "RenameRequest": {
+        "type": "object",
+        "required": ["filePath", "offset", "oldName", "newName"],
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "Path to the file containing the element to rename (relative to project root)",
+            "example": "src/main/kotlin/com/example/Service.kt"
+          },
+          "offset": {
+            "type": "integer",
+            "description": "Character offset in the file where the element is located. This is the position (0-based) in the file content where the element name starts. Used to precisely locate the element.",
+            "example": 150
+          },
+          "oldName": {
+            "type": "string",
+            "description": "Current name of the element to rename. Used to verify that the element at the offset matches what you expect (safeguard against outdated file offsets).",
+            "example": "Service"
+          },
+          "newName": {
+            "type": "string",
+            "description": "New name for the element",
+            "example": "UserService"
+          },
+          "searchInComments": {
+            "type": "boolean",
+            "description": "Whether to rename occurrences in comments",
+            "default": false
+          }
+        }
+      },
+      "ExtractMethodRequest": {
+        "type": "object",
+        "required": ["filePath", "startOffset", "endOffset", "methodName"],
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "Path to the file containing the code to extract",
+            "example": "src/main/kotlin/com/example/Service.kt"
+          },
+          "startOffset": {
+            "type": "integer",
+            "description": "Character offset where the selection starts",
+            "example": 200
+          },
+          "endOffset": {
+            "type": "integer",
+            "description": "Character offset where the selection ends",
+            "example": 350
+          },
+          "methodName": {
+            "type": "string",
+            "description": "Name for the extracted method",
+            "example": "calculateTotal"
+          },
+          "parameterOrder": {
+            "type": "array",
+            "description": "Optional. Specify the order of parameters in the extracted method. If provided, IntelliJ will reorder the detected parameters to match this list. If omitted, IntelliJ uses its default ordering (usually by first usage). Each item should be the variable name.",
+            "items": {
+              "type": "string"
+            },
+            "example": ["userId", "amount", "currency"]
+          },
+          "visibility": {
+            "type": "string",
+            "description": "Optional. Method visibility modifier. Defaults to 'private'.",
+            "enum": ["private", "protected", "public", "internal"],
+            "default": "private",
+            "example": "private"
+          }
+        }
+      },
+      "RefactoringSuccess": {
+        "type": "object",
+        "required": ["success"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always true for successful refactoring",
+            "example": true
+          },
+          "filesChanged": {
+            "type": "array",
+            "description": "List of files that were modified",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "src/main/kotlin/com/example/Service.kt",
+              "src/main/kotlin/com/example/Controller.kt"
+            ]
+          },
+          "changesCount": {
+            "type": "integer",
+            "description": "Total number of changes made",
+            "example": 12
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Always false for errors",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Error code for programmatic handling",
+                "enum": [
+                  "NAME_COLLISION",
+                  "NAME_MISMATCH",
+                  "INVALID_ELEMENT",
+                  "READ_ONLY_FILE",
+                  "FILE_NOT_FOUND",
+                  "INVALID_SELECTION",
+                  "REFACTORING_FAILED"
+                ],
+                "example": "NAME_COLLISION"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error message",
+                "example": "Name 'UserService' already exists"
+              },
+              "details": {
+                "type": "object",
+                "description": "Additional error details (structure varies by error type)",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

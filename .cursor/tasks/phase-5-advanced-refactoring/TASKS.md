@@ -258,7 +258,7 @@ object PsiUtils {
 ```json
 {
   "filePath": "src/main/kotlin/Service.kt",
-  "targetPackage": "com.hibob.employee.service"
+  "targetPackage": "com.miiken.employee.service"
 }
 ```
 
@@ -268,12 +268,12 @@ object PsiUtils {
   "success": true,
   "operation": "move-class",
   "className": "EmployeeService",
-  "oldPackage": "com.hibob.service",
-  "newPackage": "com.hibob.employee.service",
+  "oldPackage": "com.miiken.service",
+  "newPackage": "com.miiken.employee.service",
   "oldPath": "src/main/kotlin/Service.kt",
-  "newPath": "src/main/kotlin/com/hibob/employee/service/EmployeeService.kt",
+  "newPath": "src/main/kotlin/com/miiken/employee/service/EmployeeService.kt",
   "filesChanged": [
-    "src/main/kotlin/com/hibob/employee/service/EmployeeService.kt",
+    "src/main/kotlin/com/miiken/employee/service/EmployeeService.kt",
     "src/main/kotlin/Controller.kt",
     "src/test/kotlin/EmployeeServiceTest.kt"
   ]
@@ -368,7 +368,7 @@ object PsiUtils {
 - [ ] Test multiple refactorings in sequence
 - [ ] Verify IntelliJ sees all changes
 
-**File**: `src/test/kotlin/io/hibob/intellijcontrolserver/integration/AdvancedRefactoringTest.kt`
+**File**: `src/test/kotlin/io/miiken/intellijcontrolserver/integration/AdvancedRefactoringTest.kt`
 
 ### 6.6 Manual Testing
 - [ ] Create sample project with complex code

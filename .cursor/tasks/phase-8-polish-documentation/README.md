@@ -62,8 +62,8 @@ This final phase focuses on polishing the plugin, comprehensive documentation, p
 
 ## Key Files to Create/Update
 
-- `src/main/kotlin/io/hibob/intellijcontrolserver/ui/SettingsConfigurable.kt`
-- `src/main/kotlin/io/hibob/intellijcontrolserver/validation/RequestValidator.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/ui/SettingsConfigurable.kt`
+- `src/main/kotlin/io/miiken/intellijcontrolserver/validation/RequestValidator.kt`
 - `docs/API-REFERENCE.md`
 - `docs/TROUBLESHOOTING.md`
 - `docs/CONTRIBUTING.md`

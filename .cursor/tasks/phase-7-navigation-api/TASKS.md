@@ -8,7 +8,7 @@
 - [ ] Create `FindUsagesRequest` data class
 - [ ] Support both offset and line/column positions
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/model/NavigationRequest.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/model/NavigationRequest.kt`
 
 ```kotlin
 data class OpenFileRequest(
@@ -72,7 +72,7 @@ data class FindUsagesResult(
 - [ ] Implement `findUsages()` method
 - [ ] Implement `getProjectStructure()` method
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/services/NavigationService.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/services/NavigationService.kt`
 
 ```kotlin
 class NavigationService(private val project: Project) {
@@ -295,7 +295,7 @@ private fun traverseDirectory(
 - [ ] Handle GET and POST methods
 - [ ] Standard error handling
 
-**File**: `src/main/kotlin/io/hibob/intellijcontrolserver/server/handlers/NavigationHandler.kt`
+**File**: `src/main/kotlin/io/miiken/intellijcontrolserver/server/handlers/NavigationHandler.kt`
 
 ### 3.2 POST /navigation/open-file
 - [ ] Parse `OpenFileRequest`
@@ -405,13 +405,13 @@ GET /navigation/project-structure?depth=3&includeTests=true
   "project": "payroll-hub-data",
   "structure": {
     "src/main/kotlin": {
-      "com/hibob/employee": {
+      "com/miiken/employee": {
         "files": ["Employee.kt", "EmployeeService.kt"],
         "subpackages": ["dto", "repository"]
       }
     },
     "src/test/kotlin": {
-      "com/hibob/employee": {
+      "com/miiken/employee": {
         "files": ["EmployeeServiceTest.kt"]
       }
     }
@@ -494,7 +494,7 @@ fun extractSnippet(document: Document?, offset: Int, contextChars: Int): String 
 - [ ] Verify files open in IntelliJ
 - [ ] Verify cursor positions
 
-**File**: `src/test/kotlin/io/hibob/intellijcontrolserver/integration/NavigationTest.kt`
+**File**: `src/test/kotlin/io/miiken/intellijcontrolserver/integration/NavigationTest.kt`
 
 ### 6.6 Manual Testing
 - [ ] Create sample project

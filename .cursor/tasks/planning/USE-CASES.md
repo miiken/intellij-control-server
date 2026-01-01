@@ -134,7 +134,7 @@ dependencies = analyze_package_dependencies()
 curl -X POST http://localhost:8765/refactor/move-class \
   -d '{
     "filePath": "src/main/kotlin/service/EmployeeService.kt",
-    "targetPackage": "com.hibob.employee.service"
+    "targetPackage": "com.miiken.employee.service"
   }'
 ```
 

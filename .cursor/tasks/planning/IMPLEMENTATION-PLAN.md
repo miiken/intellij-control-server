@@ -417,7 +417,7 @@ class RefactoringIntegrationTest : BasePlatformTestCase() {
 
 ### Beta Testing
 
-- Internal testing with Hibob team
+- Internal testing with your team
 - Public beta via JetBrains Marketplace (Alpha/Beta channel)
 - Collect feedback via GitHub issues
 
