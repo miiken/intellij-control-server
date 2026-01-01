@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpServer
 import io.miiken.intellijcontrolserver.config.ServerConfig
 import io.miiken.intellijcontrolserver.server.handlers.HealthHandler
 import io.miiken.intellijcontrolserver.server.handlers.OpenApiHandler
+import io.miiken.intellijcontrolserver.server.handlers.SwaggerUIHandler
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
@@ -87,9 +88,11 @@ class ControlServer(private val config: ServerConfig) : Disposable {
         
         server.createContext("/health", HealthHandler(startTime))
         server.createContext("/openapi.json", OpenApiHandler())
+        server.createContext("/api-docs", SwaggerUIHandler())
         
         logger.info("✓ Registered health check handler at /health")
         logger.info("✓ Registered OpenAPI spec handler at /openapi.json")
+        logger.info("✓ Registered Swagger UI handler at /api-docs")
     }
     
     /**
