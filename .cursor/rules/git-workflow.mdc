@@ -1,0 +1,206 @@
+# Git Workflow & Branching Strategy
+
+## Core Principle: Each Phase = New Branch from Main
+
+**Every phase starts fresh from the latest `main` branch.**
+
+## Workflow
+
+### 1. Complete Phase Work
+```bash
+# Working on phase-N-feature branch
+git add .
+git commit -m "Phase N: Feature description"
+git push origin phase-N-feature
+```
+
+### 2. Create Pull Request
+```bash
+gh pr create --base main --head phase-N-feature --title "Phase N: Feature"
+```
+
+### 3. Merge to Main
+- Review PR
+- Merge to `main` via GitHub
+- Delete phase branch after merge
+
+### 4. Start Next Phase
+```bash
+# Pull latest main
+git checkout main
+git pull origin main
+
+# Create new branch for next phase FROM MAIN
+git checkout -b phase-N+1-feature
+
+# Start work
+```
+
+## Branch Naming Convention
+
+```
+phase-1-foundation           # Phase 1
+phase-2-basic-refactoring    # Phase 2
+phase-3-release-v1.0         # Phase 3 (release)
+phase-4-tasks-api            # Phase 4
+# etc.
+```
+
+## Important Rules
+
+### ✅ DO
+- **Always branch from latest `main`**
+- One branch per phase
+- Create PR when phase is complete
+- Merge to `main` before starting next phase
+- Delete branch after merge
+- Pull `main` before creating new phase branch
+
+### ❌ DON'T
+- Don't branch from another phase branch
+- Don't work on multiple phases in parallel (unless independent)
+- Don't merge phase branches into each other
+- Don't reuse phase branches
+- Don't start new phase before merging previous one
+
+## Example: Complete Workflow
+
+```bash
+# ============================================
+# Phase 1: Foundation (DONE)
+# ============================================
+git checkout -b phase-1-foundation
+# ... work on Phase 1 ...
+git add . && git commit -m "Phase 1 complete"
+git push origin phase-1-foundation
+gh pr create --base main --head phase-1-foundation
+
+# Merge PR #2 via GitHub UI
+# Delete phase-1-foundation branch
+
+# ============================================
+# Phase 2: Basic Refactoring (NEXT)
+# ============================================
+git checkout main
+git pull origin main  # Get merged Phase 1 code
+
+git checkout -b phase-2-basic-refactoring
+# ... work on Phase 2 ...
+git add . && git commit -m "Phase 2 complete"
+git push origin phase-2-basic-refactoring
+gh pr create --base main --head phase-2-basic-refactoring
+
+# Merge PR via GitHub UI
+# Delete phase-2-basic-refactoring branch
+
+# ============================================
+# Phase 3: Release v1.0
+# ============================================
+git checkout main
+git pull origin main  # Get merged Phase 2 code
+
+git checkout -b phase-3-release-v1.0
+# ... prepare release ...
+git add . && git commit -m "Release v1.0 preparation"
+git push origin phase-3-release-v1.0
+gh pr create --base main --head phase-3-release-v1.0
+
+# After merge, tag the release
+git checkout main
+git pull origin main
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# Continue with Phase 4...
+```
+
+## Why This Strategy?
+
+### ✅ Benefits
+1. **Clean History**: Each phase builds on stable `main`
+2. **No Conflicts**: Avoid complex merge conflicts between phases
+3. **Easy Review**: Each PR is self-contained
+4. **Rollback Safe**: Can revert a phase without affecting others
+5. **Parallel Work**: Different people can work on different phases
+
+### ❌ Avoid
+- Branching from feature branches creates dependency chains
+- If Phase 2 branches from Phase 1 branch:
+  - Phase 2 PR includes Phase 1 changes
+  - Can't merge Phase 2 until Phase 1 is merged
+  - Messy history and conflicts
+
+## Release Phases
+
+Release phases are special:
+
+```bash
+# Phase 3: Release v1.0
+git checkout -b phase-3-release-v1.0
+
+# Update version, docs, changelog
+# Create distribution package
+# Test thoroughly
+
+git commit -m "Release v1.0 preparation"
+git push
+
+# After PR merge to main
+git checkout main
+git pull
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+
+# Build and distribute
+gradle buildPlugin
+```
+
+## Hotfixes
+
+For urgent fixes to a released version:
+
+```bash
+# Branch from main
+git checkout main
+git pull
+git checkout -b hotfix/fix-critical-bug
+
+# Fix and test
+git commit -m "Fix critical bug"
+git push origin hotfix/fix-critical-bug
+
+# Create PR to main
+gh pr create --base main --head hotfix/fix-critical-bug
+```
+
+## Current Status
+
+**Phase 1**: Branch `phase-1-foundation`
+- Status: PR #2 open
+- Action needed: **Merge PR #2 to main**
+
+**Phase 2**: Not started
+- Action needed: After Phase 1 merge:
+  ```bash
+  git checkout main
+  git pull origin main
+  git checkout -b phase-2-basic-refactoring
+  ```
+
+## Quick Reference
+
+| Action | Command |
+|--------|---------|
+| Start phase | `git checkout main && git pull && git checkout -b phase-N-name` |
+| Commit work | `git add . && git commit -m "Description"` |
+| Push branch | `git push origin phase-N-name` |
+| Create PR | `gh pr create --base main --head phase-N-name` |
+| After merge | `git checkout main && git pull` |
+| Tag release | `git tag -a v1.0.0 -m "Release" && git push origin v1.0.0` |
+
+## Summary
+
+**Always start from `main`**  
+**One phase = One branch**  
+**Merge before starting next phase**  
+**Keep history clean and linear**
