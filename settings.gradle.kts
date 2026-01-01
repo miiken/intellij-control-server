@@ -1,2 +1,2 @@
-rootProject.name = "intellij-cursor-bridge"
+rootProject.name = "intellij-control-server"
 

@@ -41,7 +41,7 @@ object ResponseBuilder {
         details: Map<String, Any>? = null,
         statusCode: Int = 400
     ) {
-        val error = mutableMapOf(
+        val error: MutableMap<String, Any> = mutableMapOf(
             "code" to code,
             "message" to message
         )
