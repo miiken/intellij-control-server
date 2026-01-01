@@ -1,10 +1,10 @@
-package io.hibob.intellijcontrolserver
+package io.miiken.intellijcontrolserver
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
 import com.sun.net.httpserver.HttpServer
-import io.hibob.intellijcontrolserver.config.ServerConfig
-import io.hibob.intellijcontrolserver.server.handlers.HealthHandler
+import io.miiken.intellijcontrolserver.config.ServerConfig
+import io.miiken.intellijcontrolserver.server.handlers.HealthHandler
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 

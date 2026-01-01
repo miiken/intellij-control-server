@@ -1,6 +1,6 @@
 <!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
 <idea-plugin>
-    <id>io.hibob.intellij-control-server</id>
+    <id>io.miiken.intellij-control-server</id>
     <name>IntelliJ Control Server</name>
     <vendor email="avner.linder@gmail.com" url="https://github.com/miiken/intellij-control-server">miiken</vendor>
 
@@ -52,11 +52,11 @@
     <!-- Extension points and services -->
     <extensions defaultExtensionNs="com.intellij">
         <!-- Application-level service (singleton) -->
-        <applicationService serviceImplementation="io.hibob.intellijcontrolserver.ControlServerService"/>
+        <applicationService serviceImplementation="io.miiken.intellijcontrolserver.ControlServerService"/>
     </extensions>
 
     <applicationListeners>
-        <listener class="io.hibob.intellijcontrolserver.ControlServerApplicationListener"
+        <listener class="io.miiken.intellijcontrolserver.ControlServerApplicationListener"
                   topic="com.intellij.ide.AppLifecycleListener"/>
     </applicationListeners>
 </idea-plugin>

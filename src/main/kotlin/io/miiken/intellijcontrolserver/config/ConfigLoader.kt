@@ -1,4 +1,4 @@
-package io.hibob.intellijcontrolserver.config
+package io.miiken.intellijcontrolserver.config
 
 import com.google.gson.Gson
 import com.google.gson.JsonSyntaxException

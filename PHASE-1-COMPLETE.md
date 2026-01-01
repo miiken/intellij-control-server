@@ -37,7 +37,7 @@ Phase 1 successfully implemented the foundation for the IntelliJ Control Server 
 ## 📦 Files Created
 
 ```
-src/main/kotlin/io/hibob/intellijcontrolserver/
+src/main/kotlin/io/miiken/intellijcontrolserver/
 ├── ControlServer.kt                           # Main HTTP server
 ├── ControlServerService.kt                    # Application service
 ├── ControlServerApplicationListener.kt        # Lifecycle listener

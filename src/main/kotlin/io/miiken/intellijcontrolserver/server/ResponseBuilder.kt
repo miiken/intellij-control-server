@@ -1,4 +1,4 @@
-package io.hibob.intellijcontrolserver.server
+package io.miiken.intellijcontrolserver.server
 
 import com.google.gson.Gson
 import com.sun.net.httpserver.HttpExchange

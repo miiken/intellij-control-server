@@ -1,10 +1,10 @@
-package io.hibob.intellijcontrolserver
+package io.miiken.intellijcontrolserver
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
-import io.hibob.intellijcontrolserver.config.ConfigLoader
-import io.hibob.intellijcontrolserver.config.ServerConfig
+import io.miiken.intellijcontrolserver.config.ConfigLoader
+import io.miiken.intellijcontrolserver.config.ServerConfig
 
 /**
  * Application-level service for Control Server

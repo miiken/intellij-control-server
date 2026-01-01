@@ -1,4 +1,4 @@
-package io.hibob.intellijcontrolserver
+package io.miiken.intellijcontrolserver
 
 import com.intellij.ide.AppLifecycleListener
 import com.intellij.openapi.diagnostic.Logger

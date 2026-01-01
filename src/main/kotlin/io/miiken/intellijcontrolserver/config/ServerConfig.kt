@@ -1,4 +1,4 @@
-package io.hibob.intellijcontrolserver.config
+package io.miiken.intellijcontrolserver.config
 
 /**
  * Configuration for the Control Server

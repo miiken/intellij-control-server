@@ -1,9 +1,9 @@
-package io.hibob.intellijcontrolserver.server.handlers
+package io.miiken.intellijcontrolserver.server.handlers
 
 import com.intellij.openapi.diagnostic.Logger
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpHandler
-import io.hibob.intellijcontrolserver.server.ResponseBuilder
+import io.miiken.intellijcontrolserver.server.ResponseBuilder
 
 /**
  * Handler for health check endpoint
