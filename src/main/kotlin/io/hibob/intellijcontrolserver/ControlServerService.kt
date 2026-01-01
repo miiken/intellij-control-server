@@ -30,18 +30,21 @@ class ControlServerService : Disposable {
         }
         
         try {
-            // Load configuration
-            config = ConfigLoader.load()
-            logger.info("Loaded configuration: port=${config.port}, host=${config.host}")
-            
-            // Create and start server
-            controlServer = ControlServer(config).apply {
-                start()
-            }
-            
+            loadConfiguration()
+            createAndStartServer()
         } catch (e: Exception) {
             logger.error("Failed to start Control Server", e)
-            // Don't throw - we don't want to prevent IntelliJ from starting
+        }
+    }
+    
+    private fun loadConfiguration() {
+        config = ConfigLoader.load()
+        logger.info("Loaded configuration: port=${config.port}, host=${config.host}")
+    }
+    
+    private fun createAndStartServer() {
+        controlServer = ControlServer(config).apply {
+            start()
         }
     }
     

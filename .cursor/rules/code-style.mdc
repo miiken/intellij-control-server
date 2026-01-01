@@ -1,0 +1,407 @@
+# Code Style Guide
+
+## General Principles
+
+### Self-Explanatory Code
+
+**Code should be self-explanatory.** Avoid inline comments that explain *what* the code does. Instead, write clear, descriptive code that makes the intent obvious.
+
+#### ❌ Bad (Relying on inline comments)
+
+```kotlin
+// Check if port is valid
+if (port >= 1024 && port <= 65535) {
+    // Create server on the port
+    val server = HttpServer.create(InetSocketAddress(port), 0)
+}
+
+// Get the first element
+val first = list[0]
+```
+
+#### ✅ Good (Self-explanatory code)
+
+```kotlin
+fun isValidPort(port: Int): Boolean {
+    return port >= MIN_PORT && port <= MAX_PORT
+}
+
+if (isValidPort(port)) {
+    val server = createHttpServer(port)
+}
+
+val firstElement = list.first()
+```
+
+### When Comments Are Acceptable
+
+Comments should explain *why*, not *what*:
+
+#### ✅ Explaining Business Logic or Decisions
+
+```kotlin
+// Security: Bind to localhost only to prevent external access
+val address = InetSocketAddress("127.0.0.1", port)
+
+// Workaround: IntelliJ's PSI requires EDT thread for write operations
+ApplicationManager.getApplication().invokeLater {
+    // ... code ...
+}
+```
+
+#### ✅ Documentation Comments (KDoc)
+
+```kotlin
+/**
+ * Load configuration from file or use defaults
+ * 
+ * @param path Path to config file
+ * @return Loaded configuration or default if file doesn't exist/is invalid
+ */
+fun load(path: String): ServerConfig {
+    // Implementation...
+}
+```
+
+## Kotlin-Specific Guidelines
+
+### Naming Conventions
+
+#### Classes and Objects
+```kotlin
+// PascalCase for classes
+class ControlServer
+class ServerConfig
+object ConfigLoader
+```
+
+#### Functions and Variables
+```kotlin
+// camelCase for functions and variables
+fun startServer()
+fun loadConfiguration()
+val serverPort = 8765
+var isRunning = false
+```
+
+#### Constants
+```kotlin
+// UPPER_SNAKE_CASE for constants
+const val DEFAULT_PORT = 8765
+const val MAX_RETRIES = 3
+```
+
+### Function Naming
+
+Functions should be verbs or verb phrases that clearly describe their action:
+
+#### ✅ Good
+```kotlin
+fun validateConfig()
+fun createHttpServer()
+fun sendJsonResponse()
+fun isRunning()
+fun hasErrors()
+```
+
+#### ❌ Avoid
+```kotlin
+fun config()      // Noun - unclear action
+fun server()      // Noun - unclear action
+fun check()       // Too vague
+fun process()     // Too vague
+```
+
+### Variable Naming
+
+Variables should be descriptive nouns:
+
+#### ✅ Good
+```kotlin
+val serverConfig = ConfigLoader.load()
+val requestBody = parseJsonMap(exchange)
+val startTime = System.currentTimeMillis()
+```
+
+#### ❌ Avoid
+```kotlin
+val cfg = ConfigLoader.load()      // Abbreviation
+val data = parseJsonMap(exchange)  // Too generic
+val t = System.currentTimeMillis() // Single letter
+```
+
+### Boolean Naming
+
+Booleans should start with `is`, `has`, `can`, `should`:
+
+```kotlin
+val isRunning = server != null
+val hasErrors = errors.isNotEmpty()
+val canConnect = checkConnection()
+val shouldAutoStart = config.autoStart
+```
+
+### Extract Complex Conditions
+
+Instead of inline comments explaining conditions, extract them into well-named functions:
+
+#### ❌ Bad
+```kotlin
+// Check if server is ready: running, not disposed, and port valid
+if (server != null && !disposed && port >= 1024 && port <= 65535) {
+    // ...
+}
+```
+
+#### ✅ Good
+```kotlin
+fun isServerReady(): Boolean {
+    return isRunning() && !isDisposed() && isValidPort(port)
+}
+
+if (isServerReady()) {
+    // ...
+}
+```
+
+### Small, Focused Functions
+
+Break complex functions into smaller, well-named functions:
+
+#### ❌ Bad (One large function with comments)
+```kotlin
+fun handleRequest(exchange: HttpExchange) {
+    // Parse request body
+    val body = exchange.requestBody.bufferedReader().use { it.readText() }
+    
+    // Validate JSON
+    if (!isValidJson(body)) {
+        sendError(exchange, "INVALID_JSON", "Request body is not valid JSON")
+        return
+    }
+    
+    // Extract fields
+    val data = gson.fromJson(body, Map::class.java)
+    
+    // Validate required fields
+    if (!data.containsKey("taskId")) {
+        sendError(exchange, "MISSING_FIELD", "taskId is required")
+        return
+    }
+    
+    // Process the request
+    // ... more code ...
+}
+```
+
+#### ✅ Good (Small functions with clear names)
+```kotlin
+fun handleRequest(exchange: HttpExchange) {
+    val requestBody = parseRequestBody(exchange)
+    val validationError = validateRequest(requestBody)
+    
+    if (validationError != null) {
+        sendError(exchange, validationError)
+        return
+    }
+    
+    processValidRequest(exchange, requestBody)
+}
+
+private fun parseRequestBody(exchange: HttpExchange): String {
+    return exchange.requestBody.bufferedReader().use { it.readText() }
+}
+
+private fun validateRequest(body: String): ValidationError? {
+    if (!isValidJson(body)) {
+        return ValidationError("INVALID_JSON", "Request body is not valid JSON")
+    }
+    
+    val data = gson.fromJson(body, Map::class.java)
+    if (!data.containsKey("taskId")) {
+        return ValidationError("MISSING_FIELD", "taskId is required")
+    }
+    
+    return null
+}
+```
+
+## Code Organization
+
+### File Structure
+
+Each file should have a clear purpose:
+
+```kotlin
+// 1. Package declaration
+package io.hibob.intellijcontrolserver.server
+
+// 2. Imports (sorted)
+import com.intellij.openapi.diagnostic.Logger
+import com.sun.net.httpserver.HttpExchange
+import io.hibob.intellijcontrolserver.config.ServerConfig
+
+// 3. Class/Object declaration with KDoc
+/**
+ * Handler for HTTP requests
+ */
+class RequestHandler {
+    // 4. Properties
+    private val logger = Logger.getInstance(RequestHandler::class.java)
+    
+    // 5. Public functions
+    fun handleRequest() { }
+    
+    // 6. Private functions
+    private fun validateRequest() { }
+    
+    // 7. Companion object (if needed)
+    companion object {
+        const val VERSION = "1.0.0"
+    }
+}
+```
+
+### Grouping Related Code
+
+Group related functionality together:
+
+```kotlin
+// ✅ Good - Grouped by functionality
+class ControlServer {
+    // Configuration
+    private val config: ServerConfig
+    private val port: Int
+    
+    // Server state
+    private var server: HttpServer? = null
+    private val startTime: Long
+    
+    // Lifecycle methods
+    fun start() { }
+    fun stop() { }
+    fun restart() { }
+    
+    // Status queries
+    fun isRunning(): Boolean { }
+    fun getUptime(): Long { }
+}
+```
+
+## Error Handling
+
+### Descriptive Error Messages
+
+Error messages should be clear without needing comments:
+
+```kotlin
+// ✅ Good - Clear error messages
+throw IllegalArgumentException("Port must be between $MIN_PORT and $MAX_PORT, got $port")
+throw IllegalStateException("Cannot start server: server is already running")
+throw FileNotFoundException("Config file not found at $path")
+```
+
+### Early Returns
+
+Use early returns to avoid nesting:
+
+#### ❌ Bad (Nested conditions with comments)
+```kotlin
+fun processTask(taskId: String) {
+    if (taskId.isNotEmpty()) {
+        val task = findTask(taskId)
+        if (task != null) {
+            // Process the task
+            if (task.isValid()) {
+                // Execute
+                task.execute()
+            }
+        }
+    }
+}
+```
+
+#### ✅ Good (Early returns, self-explanatory)
+```kotlin
+fun processTask(taskId: String) {
+    if (taskId.isEmpty()) return
+    
+    val task = findTask(taskId) ?: return
+    
+    if (!task.isValid()) return
+    
+    task.execute()
+}
+```
+
+## The Block Comment Rule
+
+**If an inline comment describes a code block, extract that block into a method.**
+
+#### ❌ Bad (Comment describes a block)
+```kotlin
+fun processRequest(exchange: HttpExchange) {
+    // Parse and validate request
+    val body = exchange.requestBody.bufferedReader().use { it.readText() }
+    val data = gson.fromJson(body, Map::class.java)
+    if (!data.containsKey("id")) {
+        sendError(exchange, "MISSING_ID")
+        return
+    }
+    
+    // Find and update the task
+    val taskId = data["id"] as String
+    val task = taskManager.findTask(taskId)
+    task?.update(data)
+}
+```
+
+#### ✅ Good (Extracted methods)
+```kotlin
+fun processRequest(exchange: HttpExchange) {
+    val requestData = parseAndValidateRequest(exchange) ?: return
+    updateTask(requestData)
+}
+
+private fun parseAndValidateRequest(exchange: HttpExchange): Map<String, Any>? {
+    val body = exchange.requestBody.bufferedReader().use { it.readText() }
+    val data = gson.fromJson(body, Map::class.java)
+    
+    if (!data.containsKey("id")) {
+        sendError(exchange, "MISSING_ID")
+        return null
+    }
+    
+    return data
+}
+
+private fun updateTask(data: Map<String, Any>) {
+    val taskId = data["id"] as String
+    val task = taskManager.findTask(taskId)
+    task?.update(data)
+}
+```
+
+**This applies to all comments that start with verbs like:**
+- "Create...", "Initialize...", "Set up..."
+- "Parse...", "Validate...", "Check..."
+- "Load...", "Save...", "Update..."
+- "Process...", "Handle...", "Execute..."
+
+If you write such a comment, stop and extract a method instead.
+
+## Summary
+
+**Core Principle**: Write code that reads like well-written prose. If you need a comment to explain what the code does, refactor the code instead.
+
+**Use comments only for**:
+- **Why**: Explaining business logic, decisions, workarounds
+- **Documentation**: KDoc for public APIs
+- **Context**: Complex algorithms where the "what" might not be obvious even with good names
+
+**Avoid comments for**:
+- **What**: Describing what the code does (use better names instead)
+- **Obvious**: Stating the obvious (`i++  // increment i`)
+- **Outdated**: Comments that don't match the code anymore
+- **Block descriptions**: Comments that describe what a block of code does (extract a method instead)
+

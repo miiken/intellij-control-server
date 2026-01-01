@@ -21,29 +21,32 @@ class ControlServer(private val config: ServerConfig) : Disposable {
      */
     fun start() {
         try {
-            logger.info("Starting IntelliJ Control Server...")
-            logger.info("Configuration: port=${config.port}, host=${config.host}, cors=${config.enableCors}")
-            
-            // Create HTTP server
-            val address = InetSocketAddress(config.host, config.port)
-            server = HttpServer.create(address, 0).apply {
-                // Set thread pool for handling requests
-                executor = Executors.newFixedThreadPool(10)
-                
-                // Register handlers
-                registerHandlers(this)
-                
-                // Start server
-                start()
-            }
-            
-            logger.info("✓ IntelliJ Control Server started successfully on http://${config.host}:${config.port}")
-            logger.info("  Health check: http://${config.host}:${config.port}/health")
-            
+            logStartupInfo()
+            server = createAndConfigureHttpServer()
+            logSuccessfulStartup()
         } catch (e: Exception) {
             logger.error("Failed to start IntelliJ Control Server", e)
             throw RuntimeException("Failed to start Control Server: ${e.message}", e)
         }
+    }
+    
+    private fun logStartupInfo() {
+        logger.info("Starting IntelliJ Control Server...")
+        logger.info("Configuration: port=${config.port}, host=${config.host}, cors=${config.enableCors}")
+    }
+    
+    private fun createAndConfigureHttpServer(): HttpServer {
+        val address = InetSocketAddress(config.host, config.port)
+        return HttpServer.create(address, 0).apply {
+            executor = Executors.newFixedThreadPool(10)
+            registerHandlers(this)
+            start()
+        }
+    }
+    
+    private fun logSuccessfulStartup() {
+        logger.info("✓ IntelliJ Control Server started successfully on http://${config.host}:${config.port}")
+        logger.info("  Health check: http://${config.host}:${config.port}/health")
     }
     
     /**
@@ -81,13 +84,7 @@ class ControlServer(private val config: ServerConfig) : Disposable {
     private fun registerHandlers(server: HttpServer) {
         logger.info("Registering HTTP handlers...")
         
-        // Health check endpoint
         server.createContext("/health", HealthHandler(startTime))
-        
-        // TODO: Register additional handlers as they are implemented
-        // server.createContext("/tasks", TasksHandler())
-        // server.createContext("/refactor", RefactoringHandler())
-        // server.createContext("/navigation", NavigationHandler())
         
         logger.info("✓ Registered health check handler at /health")
     }

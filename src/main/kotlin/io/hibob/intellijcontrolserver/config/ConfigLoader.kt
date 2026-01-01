@@ -43,22 +43,24 @@ object ConfigLoader {
         return try {
             val json = file.readText()
             val config = gson.fromJson(json, ServerConfig::class.java)
-            
-            // Validate configuration
-            val errors = config.validate()
-            if (errors.isNotEmpty()) {
-                logger.warn("Invalid configuration: ${errors.joinToString(", ")}. Using default configuration.")
-                ServerConfig.DEFAULT
-            } else {
-                logger.info("Loaded configuration from $path")
-                config
-            }
+            validateAndReturnConfig(config, path)
         } catch (e: JsonSyntaxException) {
             logger.error("Failed to parse config file at $path: ${e.message}. Using default configuration.", e)
             ServerConfig.DEFAULT
         } catch (e: Exception) {
             logger.error("Failed to load config file at $path: ${e.message}. Using default configuration.", e)
             ServerConfig.DEFAULT
+        }
+    }
+    
+    private fun validateAndReturnConfig(config: ServerConfig, path: String): ServerConfig {
+        val errors = config.validate()
+        return if (errors.isNotEmpty()) {
+            logger.warn("Invalid configuration: ${errors.joinToString(", ")}. Using default configuration.")
+            ServerConfig.DEFAULT
+        } else {
+            logger.info("Loaded configuration from $path")
+            config
         }
     }
     
@@ -82,9 +84,7 @@ object ConfigLoader {
     fun save(config: ServerConfig, path: String): Boolean {
         return try {
             val file = File(path)
-            
-            // Create parent directories if they don't exist
-            file.parentFile?.mkdirs()
+            ensureParentDirectoryExists(file)
             
             val json = gson.toJson(config)
             file.writeText(json)
@@ -95,6 +95,10 @@ object ConfigLoader {
             logger.error("Failed to save config file at $path: ${e.message}", e)
             false
         }
+    }
+    
+    private fun ensureParentDirectoryExists(file: File) {
+        file.parentFile?.mkdirs()
     }
     
     /**
