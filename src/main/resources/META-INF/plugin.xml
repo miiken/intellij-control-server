@@ -53,6 +53,13 @@
     <extensions defaultExtensionNs="com.intellij">
         <!-- Application-level service (singleton) -->
         <applicationService serviceImplementation="io.miiken.intellijcontrolserver.ControlServerService"/>
+        
+        <!-- Settings page -->
+        <applicationConfigurable 
+            parentId="tools"
+            instance="io.miiken.intellijcontrolserver.settings.ControlServerConfigurable"
+            id="io.miiken.intellijcontrolserver.settings.ControlServerConfigurable"
+            displayName="IntelliJ Control Server"/>
     </extensions>
 
     <applicationListeners>

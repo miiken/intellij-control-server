@@ -1,7 +1,7 @@
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.21"
-    id("org.jetbrains.intellij") version "1.16.1"
+    id("org.jetbrains.kotlin.jvm") version "1.9.23"
+    id("org.jetbrains.intellij") version "1.17.2"
 }
 
 group = "io.miiken.intellijcontrolserver"
@@ -15,14 +15,13 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
     
-    testImplementation("org.jetbrains.kotlin:kotlin-test")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
     testImplementation("io.mockk:mockk:1.13.8")
 }
 
 intellij {
-    version.set("2023.3")
+    version.set("2024.3")
     type.set("IC") // IntelliJ IDEA Community Edition
     plugins.set(listOf("tasks", "java"))
 }
@@ -43,7 +42,7 @@ tasks {
 
     patchPluginXml {
         sinceBuild.set("233")
-        untilBuild.set("241.*")
+        untilBuild.set("253.*")
     }
 
     signPlugin {
