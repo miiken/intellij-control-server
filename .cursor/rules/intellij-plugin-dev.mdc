@@ -1,0 +1,396 @@
+# IntelliJ Plugin Development Rules
+
+## Project-Specific Guidelines for Control Server Plugin
+
+### Package Structure
+
+Follow this consistent package organization:
+
+```
+io.miiken.intellijcontrolserver/
+├── config/              # Configuration (ServerConfig, ConfigLoader)
+├── server/              # HTTP server infrastructure
+│   └── handlers/        # HTTP request handlers
+├── services/            # Business logic services
+│   ├── TaskManagerService
+│   ├── RefactoringService
+│   └── NavigationService
+└── util/                # Utility classes (PsiUtils, etc.)
+```
+
+**Rules**:
+- One top-level concept per package
+- Handlers stay in `server/handlers/`
+- Services stay in `services/`
+- Keep utilities in `util/`
+
+### Threading Model
+
+IntelliJ has strict threading requirements. **Always follow these rules**:
+
+#### Read Operations (Query PSI, read files)
+```kotlin
+ReadAction.compute<ResultType, Throwable> {
+    // Safe to read PSI, files, project structure
+    val psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+    // ... read operations ...
+}
+```
+
+#### Write Operations (Modify code, refactor)
+```kotlin
+WriteCommandAction.runWriteCommandAction(project) {
+    // Safe to modify PSI, perform refactoring
+    element.setName(newName)
+}
+```
+
+#### UI Operations (Open files, show dialogs)
+```kotlin
+ApplicationManager.getApplication().invokeLater {
+    // Safe to interact with UI
+    FileEditorManager.getInstance(project).openFile(file, true)
+}
+```
+
+**Common Pattern** (HTTP → Read → Write → UI):
+```kotlin
+fun handleRefactorRequest(request: RenameRequest): Result {
+    return ReadAction.compute<Result, Throwable> {
+        val element = findElement(request)
+        
+        WriteCommandAction.runWriteCommandAction(project) {
+            performRefactoring(element)
+        }
+        
+        Result(success = true)
+    }
+}
+```
+
+### Services
+
+#### Application-Level Services (Singleton)
+Use for plugin-wide state (like our HTTP server):
+
+```kotlin
+@Service
+class ControlServerService : Disposable {
+    companion object {
+        fun getInstance(): ControlServerService {
+            return ApplicationManager.getApplication()
+                .getService(ControlServerService::class.java)
+        }
+    }
+    
+    override fun dispose() {
+        // Cleanup
+    }
+}
+```
+
+Register in `plugin.xml`:
+```xml
+<extensions defaultExtensionNs="com.intellij">
+    <applicationService serviceImplementation="io.miiken.intellijcontrolserver.ControlServerService"/>
+</extensions>
+```
+
+#### Project-Level Services
+Use when you need per-project state:
+
+```kotlin
+@Service(Service.Level.PROJECT)
+class RefactoringService(private val project: Project) {
+    companion object {
+        fun getInstance(project: Project): RefactoringService {
+            return project.getService(RefactoringService::class.java)
+        }
+    }
+}
+```
+
+### Lifecycle Management
+
+#### Plugin Startup
+```kotlin
+class ControlServerApplicationListener : AppLifecycleListener {
+    override fun appFrameCreated(commandLineArgs: MutableList<String>) {
+        // Initialize when IntelliJ starts
+    }
+    
+    override fun appWillBeClosed(isRestart: Boolean) {
+        // Cleanup before IntelliJ closes
+    }
+}
+```
+
+Register in `plugin.xml`:
+```xml
+<applicationListeners>
+    <listener class="io.miiken.intellijcontrolserver.ControlServerApplicationListener"
+              topic="com.intellij.ide.AppLifecycleListener"/>
+</applicationListeners>
+```
+
+#### Resource Cleanup
+Always implement `Disposable` for resources:
+
+```kotlin
+class MyResource : Disposable {
+    override fun dispose() {
+        // Release resources
+        // Called automatically by IntelliJ
+    }
+}
+```
+
+### PSI (Program Structure Interface)
+
+#### Finding PSI Elements
+```kotlin
+// From file path
+val virtualFile = LocalFileSystem.getInstance().findFileByPath(path)
+val psiFile = PsiManager.getInstance(project).findFile(virtualFile)
+
+// From offset
+val element = psiFile.findElementAt(offset)
+
+// From line/column
+val document = psiFile.viewProvider.document
+val offset = document.getLineStartOffset(line) + column
+val element = psiFile.findElementAt(offset)
+```
+
+#### Never Hold PSI References
+PSI can become invalid (file edited, project closed). Always:
+- Find PSI when needed (in ReadAction)
+- Don't store PSI elements as fields
+- Use VirtualFile or file paths for persistence
+
+**❌ Bad**:
+```kotlin
+class MyService {
+    private var psiFile: PsiFile? = null  // Can become invalid!
+}
+```
+
+**✅ Good**:
+```kotlin
+class MyService {
+    private var filePath: String? = null
+    
+    private fun getPsiFile(): PsiFile? {
+        return ReadAction.compute<PsiFile?, Throwable> {
+            val virtualFile = LocalFileSystem.getInstance().findFileByPath(filePath)
+            virtualFile?.let { PsiManager.getInstance(project).findFile(it) }
+        }
+    }
+}
+```
+
+### Logging
+
+Always use IntelliJ's logger:
+
+```kotlin
+class MyClass {
+    private val logger = Logger.getInstance(MyClass::class.java)
+    
+    fun doSomething() {
+        logger.info("Starting operation")
+        logger.debug("Debug details: $details")
+        logger.warn("Warning message")
+        logger.error("Error occurred", exception)
+    }
+}
+```
+
+**Never use**:
+- `println()`
+- `System.out.println()`
+- `printStackTrace()`
+
+### Error Handling
+
+#### Don't Crash IntelliJ
+Catch exceptions at plugin boundaries:
+
+```kotlin
+override fun appFrameCreated(commandLineArgs: MutableList<String>) {
+    try {
+        startServer()
+    } catch (e: Exception) {
+        logger.error("Failed to start server", e)
+        // Don't throw - let IntelliJ continue
+    }
+}
+```
+
+#### Provide Meaningful Errors to API Clients
+```kotlin
+try {
+    performRefactoring()
+} catch (e: IncorrectOperationException) {
+    return RefactoringResult(
+        success = false,
+        error = "Cannot refactor: ${e.message}"
+    )
+}
+```
+
+### Plugin Descriptor (plugin.xml)
+
+Keep it minimal and clear:
+
+```xml
+<idea-plugin>
+    <id>io.miiken.intellij-control-server</id>
+    <name>IntelliJ Control Server</name>
+    <vendor email="..." url="...">miiken</vendor>
+    
+    <description><![CDATA[Brief description]]></description>
+    
+    <!-- Platform dependencies -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.intellij.tasks</depends>
+    
+    <!-- Services -->
+    <extensions defaultExtensionNs="com.intellij">
+        <applicationService serviceImplementation="..."/>
+    </extensions>
+    
+    <!-- Listeners -->
+    <applicationListeners>
+        <listener class="..." topic="..."/>
+    </applicationListeners>
+</idea-plugin>
+```
+
+### Performance
+
+#### Don't Block the UI Thread
+Our HTTP server runs on its own threads - good! But when we call IntelliJ APIs:
+
+```kotlin
+fun handleRequest(exchange: HttpExchange) {
+    // We're on HTTP thread pool - OK to do blocking work
+    val result = ReadAction.compute<Result, Throwable> {
+        // This might be dispatched to different thread - OK
+        expensiveOperation()
+    }
+    sendResponse(exchange, result)
+}
+```
+
+#### Avoid Heavy Operations on Startup
+```kotlin
+override fun appFrameCreated(commandLineArgs: MutableList<String>) {
+    // Quick startup only
+    if (config.autoStart) {
+        startServer()  // Should be fast
+    }
+}
+```
+
+### Testing
+
+Test IntelliJ-specific code with platform fixtures:
+
+```kotlin
+class MyServiceTest : BasePlatformTestCase() {
+    fun testRefactoring() {
+        // Creates a test project, PSI, etc.
+        myFixture.configureByText("Test.kt", """
+            class MyClass {}
+        """)
+        
+        // Test your service
+        val result = myService.rename(...)
+        
+        // Verify
+        assertThat(myFixture.file.text).contains("NewName")
+    }
+}
+```
+
+### Common Pitfalls to Avoid
+
+1. **❌ Don't access PSI from HTTP threads directly**
+   ```kotlin
+   // BAD - PSI from HTTP thread
+   fun handleRequest() {
+       val psiFile = PsiManager...  // Wrong thread!
+   }
+   ```
+   
+   **✅ Use ReadAction**
+   ```kotlin
+   fun handleRequest() {
+       val result = ReadAction.compute<PsiFile?, Throwable> {
+           PsiManager...
+       }
+   }
+   ```
+
+2. **❌ Don't hold PSI references**
+   ```kotlin
+   class Service {
+       private var element: PsiElement? = null  // Can become invalid
+   }
+   ```
+
+3. **❌ Don't throw exceptions to IntelliJ**
+   ```kotlin
+   override fun appFrameCreated(...) {
+       startServer()  // Might throw, will crash IntelliJ!
+   }
+   ```
+   
+   **✅ Catch and log**
+   ```kotlin
+   override fun appFrameCreated(...) {
+       try {
+           startServer()
+       } catch (e: Exception) {
+           logger.error("...", e)
+       }
+   }
+   ```
+
+4. **❌ Don't use println for logging**
+   ```kotlin
+   println("Server started")  // Goes nowhere useful
+   ```
+   
+   **✅ Use Logger**
+   ```kotlin
+   logger.info("Server started")  // Appears in idea.log
+   ```
+
+### Project-Specific Rules
+
+For **IntelliJ Control Server**:
+
+1. **HTTP Server runs on separate threads** - Always use ReadAction/WriteCommandAction when touching IntelliJ APIs
+2. **Services are singletons** - ControlServerService is application-level, others will be project-level
+3. **Handlers should be lightweight** - Parse request, call service, return response
+4. **Services contain business logic** - TaskManagerService, RefactoringService, etc.
+5. **Never expose IntelliJ internals** - HTTP API should use simple JSON, not IntelliJ classes
+
+### Quick Reference
+
+| Task | Thread Context |
+|------|----------------|
+| Read PSI, files, project | `ReadAction.compute { }` |
+| Modify code, refactor | `WriteCommandAction.run { }` |
+| Open files, show UI | `invokeLater { }` |
+| HTTP request/response | HTTP thread (any thread) |
+| Service initialization | Main thread (safe) |
+
+### When in Doubt
+
+1. Check IntelliJ's `idea.log` for exceptions
+2. Use `ReadAction` for anything reading project state
+3. Use `WriteCommandAction` for anything modifying files
+4. Test with `./gradlew runIde` to see errors in real IntelliJ
