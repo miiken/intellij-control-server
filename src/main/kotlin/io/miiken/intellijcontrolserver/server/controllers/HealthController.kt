@@ -1,5 +1,6 @@
 package io.miiken.intellijcontrolserver.server.controllers
 
+import io.miiken.intellijcontrolserver.models.HealthResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
@@ -27,20 +28,20 @@ class HealthController(private val startTime: Long) {
         description = "Server is healthy",
         content = [Content(
             mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = Map::class),
+            schema = Schema(implementation = HealthResponse::class),
             examples = [ExampleObject(
-                value = """{"success":true,"status":"ok","version":"1.0.0","uptime":3600,"timestamp":1735725521000}"""
+                value = """{"status":"ok","version":"1.0.0","uptime":3600,"timestamp":1735725521000}"""
             )]
         )]
     )
-    fun health(): Map<String, Any> {
+    fun health(): HealthResponse {
         val uptime = (System.currentTimeMillis() - startTime) / 1000
         
-        return mapOf(
-            "status" to "ok",
-            "version" to "1.0.0",
-            "uptime" to uptime,
-            "timestamp" to System.currentTimeMillis()
+        return HealthResponse(
+            status = "ok",
+            version = "1.0.0",
+            uptime = uptime,
+            timestamp = System.currentTimeMillis()
         )
     }
 }

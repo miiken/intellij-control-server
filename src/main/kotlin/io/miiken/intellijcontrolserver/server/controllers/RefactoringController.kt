@@ -3,6 +3,7 @@ package io.miiken.intellijcontrolserver.server.controllers
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
 import io.miiken.intellijcontrolserver.models.ExtractMethodRequest
+import io.miiken.intellijcontrolserver.models.RefactoringResult
 import io.miiken.intellijcontrolserver.models.RenameRequest
 import io.miiken.intellijcontrolserver.services.RefactoringService
 import io.swagger.v3.oas.annotations.Operation
@@ -39,8 +40,8 @@ class RefactoringController {
             mediaType = MediaType.APPLICATION_JSON,
             schema = Schema(implementation = RenameRequest::class),
             examples = [ExampleObject(
-                name = "Rename class",
-                value = """{"filePath":"src/main/kotlin/Service.kt","offset":150,"oldName":"Service","newName":"UserService","searchInComments":false}"""
+                name = "Rename method",
+                value = """{"filePath":"src/main/kotlin/Service.kt","line":15,"oldName":"processUser","newName":"handleUser"}"""
             )]
         )]
     )
@@ -49,6 +50,7 @@ class RefactoringController {
         description = "Rename successful",
         content = [Content(
             mediaType = MediaType.APPLICATION_JSON,
+            schema = Schema(implementation = RefactoringResult::class),
             examples = [ExampleObject(
                 value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt","src/test/kotlin/ServiceTest.kt"],"changesCount":12}"""
             )]
@@ -61,21 +63,18 @@ class RefactoringController {
         @Parameter(description = "Name of the project to perform refactoring in", required = true)
         projectName: String,
         request: RenameRequest
-    ): Map<String, Any> {
+    ): RefactoringResult {
         validateRenameRequest(request)
         
         val project = findProject(projectName)
         val result = RefactoringService.rename(project, request)
         
-        if (result.success) {
-            return mapOf(
-                "filesChanged" to result.filesChanged,
-                "changesCount" to result.changesCount
-            )
-        } else {
+        if (!result.success) {
             val error = result.error!!
             throw RefactoringException(error.code, error.message, error.details)
         }
+        
+        return result
     }
     
     @POST
@@ -94,10 +93,10 @@ class RefactoringController {
             schema = Schema(implementation = ExtractMethodRequest::class),
             examples = [ExampleObject(
                 name = "Basic extraction",
-                value = """{"filePath":"src/main/kotlin/Service.kt","startOffset":200,"endOffset":350,"methodName":"calculateTotal"}"""
+                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15,"methodName":"calculateTotal"}"""
             ), ExampleObject(
-                name = "With parameter order",
-                value = """{"filePath":"src/main/kotlin/Service.kt","startOffset":200,"endOffset":350,"methodName":"calculateTotal","parameterOrder":["userId","amount","currency"],"visibility":"private"}"""
+                name = "With parameter order and columns",
+                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15,"startColumn":4,"endColumn":20,"methodName":"calculateTotal","parameterOrder":["userId","amount","currency"],"visibility":"private"}"""
             )]
         )]
     )
@@ -106,6 +105,7 @@ class RefactoringController {
         description = "Extract method successful",
         content = [Content(
             mediaType = MediaType.APPLICATION_JSON,
+            schema = Schema(implementation = RefactoringResult::class),
             examples = [ExampleObject(
                 value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt"],"changesCount":1}"""
             )]
@@ -119,22 +119,19 @@ class RefactoringController {
         @Parameter(description = "Name of the project to perform refactoring in", required = true)
         projectName: String,
         request: ExtractMethodRequest
-    ): Map<String, Any> {
+    ): RefactoringResult {
         validateExtractMethodRequest(request)
         
         val project = findProject(projectName)
         val result = RefactoringService.extractMethod(project, request)
         
-        if (result.success) {
-            return mapOf(
-                "filesChanged" to result.filesChanged,
-                "changesCount" to result.changesCount
-            )
-        } else {
+        if (!result.success) {
             val error = result.error!!
             val statusCode = if (error.code == "NOT_IMPLEMENTED") 501 else 400
             throw RefactoringException(error.code, error.message, error.details, statusCode)
         }
+        
+        return result
     }
     
     private fun findProject(projectName: String): Project {
@@ -147,8 +144,8 @@ class RefactoringController {
         if (request.filePath.isBlank()) {
             throw RefactoringException("INVALID_REQUEST", "filePath is required")
         }
-        if (request.offset < 0) {
-            throw RefactoringException("INVALID_REQUEST", "offset must be non-negative")
+        if (request.line < 1) {
+            throw RefactoringException("INVALID_REQUEST", "line must be positive (1-based)")
         }
         if (request.oldName.isBlank()) {
             throw RefactoringException("INVALID_REQUEST", "oldName is required")
@@ -165,11 +162,20 @@ class RefactoringController {
         if (request.filePath.isBlank()) {
             throw RefactoringException("INVALID_REQUEST", "filePath is required")
         }
-        if (request.startOffset < 0) {
-            throw RefactoringException("INVALID_REQUEST", "startOffset must be non-negative")
+        if (request.startLine < 1) {
+            throw RefactoringException("INVALID_REQUEST", "startLine must be positive (1-based)")
         }
-        if (request.endOffset <= request.startOffset) {
-            throw RefactoringException("INVALID_REQUEST", "endOffset must be greater than startOffset")
+        if (request.endLine < 1) {
+            throw RefactoringException("INVALID_REQUEST", "endLine must be positive (1-based)")
+        }
+        if (request.endLine < request.startLine) {
+            throw RefactoringException("INVALID_REQUEST", "endLine must be greater than or equal to startLine")
+        }
+        if (request.startColumn != null && request.startColumn < 0) {
+            throw RefactoringException("INVALID_REQUEST", "startColumn must be non-negative (0-based)")
+        }
+        if (request.endColumn != null && request.endColumn < 0) {
+            throw RefactoringException("INVALID_REQUEST", "endColumn must be non-negative (0-based)")
         }
         if (request.methodName.isBlank()) {
             throw RefactoringException("INVALID_REQUEST", "methodName is required")

@@ -7,7 +7,8 @@ data class Route(
     val path: String,
     val controllerInstance: Any,
     val handlerMethod: Method,
-    val operation: OperationMetadata? = null
+    val operation: OperationMetadata? = null,
+    val requestBodyType: Class<*>? = null
 )
 
 data class OperationMetadata(

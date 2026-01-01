@@ -12,18 +12,32 @@ data class ExtractMethodRequest(
     val filePath: String,
     
     @Schema(
-        description = "Character offset where the code selection starts",
-        example = "200",
+        description = "Line number where the code selection starts (1-based, as shown in editors)",
+        example = "10",
         required = true
     )
-    val startOffset: Int,
+    val startLine: Int,
     
     @Schema(
-        description = "Character offset where the code selection ends",
-        example = "350",
+        description = "Line number where the code selection ends (1-based, as shown in editors)",
+        example = "15",
         required = true
     )
-    val endOffset: Int,
+    val endLine: Int,
+    
+    @Schema(
+        description = "Column number where the selection starts on startLine (0-based). If omitted, uses start of line.",
+        example = "4",
+        required = false
+    )
+    val startColumn: Int? = null,
+    
+    @Schema(
+        description = "Column number where the selection ends on endLine (0-based). If omitted, uses end of line.",
+        example = "20",
+        required = false
+    )
+    val endColumn: Int? = null,
     
     @Schema(
         description = "Name for the extracted method",

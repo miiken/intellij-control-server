@@ -95,12 +95,12 @@ class OpenApiGenerator(private val registry: ControllerRegistry) {
             operation["responses"] = generateResponses(listOf("200" to "Success"))
         }
         
-        if (route.method == "POST") {
+        if (route.method == "POST" && route.requestBodyType != null) {
             operation["requestBody"] = mapOf(
                 "required" to true,
                 "content" to mapOf(
                     "application/json" to mapOf(
-                        "schema" to mapOf("type" to "object")
+                        "schema" to generateSchemaFromClass(route.requestBodyType)
                     )
                 )
             )
@@ -124,6 +124,62 @@ class OpenApiGenerator(private val registry: ControllerRegistry) {
         }
         
         return responsesMap
+    }
+    
+    private fun generateSchemaFromClass(clazz: Class<*>): Map<String, Any> {
+        val schema = mutableMapOf<String, Any>("type" to "object")
+        val properties = mutableMapOf<String, Any>()
+        val required = mutableListOf<String>()
+        
+        clazz.kotlin.constructors.firstOrNull()?.parameters?.forEach { param ->
+            val paramName = param.name ?: return@forEach
+            val paramType = param.type.classifier as? kotlin.reflect.KClass<*>
+            
+            properties[paramName] = generatePropertySchema(paramType, param)
+            
+            if (!param.isOptional && !param.type.isMarkedNullable) {
+                required.add(paramName)
+            }
+        }
+        
+        if (properties.isNotEmpty()) {
+            schema["properties"] = properties
+        }
+        
+        if (required.isNotEmpty()) {
+            schema["required"] = required
+        }
+        
+        return schema
+    }
+    
+    private fun generatePropertySchema(kClass: kotlin.reflect.KClass<*>?, param: kotlin.reflect.KParameter): Map<String, Any> {
+        val schema = mutableMapOf<String, Any>()
+        
+        when (kClass?.qualifiedName) {
+            "kotlin.String" -> schema["type"] = "string"
+            "kotlin.Int" -> schema["type"] = "integer"
+            "kotlin.Long" -> schema["type"] = "integer"
+            "kotlin.Boolean" -> schema["type"] = "boolean"
+            "kotlin.Double", "kotlin.Float" -> schema["type"] = "number"
+            "kotlin.collections.List" -> {
+                schema["type"] = "array"
+                schema["items"] = mapOf("type" to "string")
+            }
+            else -> schema["type"] = "object"
+        }
+        
+        val schemaAnnotation = param.annotations.filterIsInstance<io.swagger.v3.oas.annotations.media.Schema>().firstOrNull()
+        if (schemaAnnotation != null) {
+            if (schemaAnnotation.description.isNotEmpty()) {
+                schema["description"] = schemaAnnotation.description
+            }
+            if (schemaAnnotation.example.isNotEmpty()) {
+                schema["example"] = schemaAnnotation.example
+            }
+        }
+        
+        return schema
     }
     
     private fun generateComponents(): Map<String, Any> {

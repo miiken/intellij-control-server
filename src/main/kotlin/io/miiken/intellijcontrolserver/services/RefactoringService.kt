@@ -19,42 +19,46 @@ object RefactoringService {
                     error = RefactoringError("FILE_NOT_FOUND", "File not found: ${request.filePath}")
                 )
             
-            val namedElement = PsiUtils.findNamedElementAtOffset(psiFile, request.offset)
-                ?: return RefactoringResult(
-                    success = false,
-                    error = RefactoringError(
-                        "INVALID_ELEMENT",
-                        "No renameable element found at offset ${request.offset}"
-                    )
-                )
+            val findResult = PsiUtils.findNamedElementByLineAndName(psiFile, request.line, request.oldName)
             
-            val validationResult = PsiUtils.validateElementName(namedElement, request.oldName)
-            when (validationResult) {
-                is PsiUtils.ValidationResult.Mismatch -> {
+            val namedElement = when (findResult) {
+                is PsiUtils.FindElementResult.Found -> findResult.element
+                is PsiUtils.FindElementResult.NotFound -> {
                     return RefactoringResult(
                         success = false,
                         error = RefactoringError(
-                            "NAME_MISMATCH",
-                            "Expected '${validationResult.expectedName}' at offset ${request.offset}, but found '${validationResult.actualName}'. File may have changed.",
-                            mapOf(
-                                "expectedName" to validationResult.expectedName,
-                                "actualName" to validationResult.actualName,
-                                "offset" to request.offset
-                            )
+                            "ELEMENT_NOT_FOUND",
+                            findResult.message,
+                            mapOf("line" to request.line, "name" to request.oldName)
                         )
                     )
                 }
-                is PsiUtils.ValidationResult.Invalid -> {
+                is PsiUtils.FindElementResult.Ambiguous -> {
                     return RefactoringResult(
                         success = false,
-                        error = RefactoringError("INVALID_ELEMENT", validationResult.reason)
+                        error = RefactoringError(
+                            "AMBIGUOUS_LOCATION",
+                            findResult.message,
+                            mapOf("line" to request.line, "name" to request.oldName)
+                        )
                     )
                 }
-                PsiUtils.ValidationResult.Valid -> {
+                is PsiUtils.FindElementResult.InvalidLine -> {
+                    return RefactoringResult(
+                        success = false,
+                        error = RefactoringError(
+                            "INVALID_LINE",
+                            findResult.message,
+                            mapOf("line" to request.line)
+                        )
+                    )
                 }
             }
             
-            return executeRename(project, namedElement, request.newName, request.searchInComments)
+            val isMethod = PsiUtils.isMethod(namedElement)
+            val shouldSearchInStrings = request.searchInStrings ?: isMethod
+            
+            return executeRename(project, namedElement, request.newName, shouldSearchInStrings)
             
         } catch (e: Exception) {
             return RefactoringResult(
@@ -68,24 +72,67 @@ object RefactoringService {
         }
     }
     
-    @Suppress("UNUSED_PARAMETER")
     fun extractMethod(project: Project, request: ExtractMethodRequest): RefactoringResult {
-        return RefactoringResult(
-            success = false,
-            error = RefactoringError(
-                "NOT_IMPLEMENTED",
-                "Extract method is not yet implemented. Coming in next iteration."
+        try {
+            val psiFile = PsiUtils.findPsiFile(project, request.filePath)
+                ?: return RefactoringResult(
+                    success = false,
+                    error = RefactoringError("FILE_NOT_FOUND", "File not found: ${request.filePath}")
+                )
+            
+            val rangeResult = PsiUtils.calculateTextRange(
+                psiFile,
+                request.startLine,
+                request.endLine,
+                request.startColumn,
+                request.endColumn
             )
-        )
+            
+            when (rangeResult) {
+                is PsiUtils.TextRangeResult.Error -> {
+                    return RefactoringResult(
+                        success = false,
+                        error = RefactoringError(
+                            "INVALID_RANGE",
+                            rangeResult.message,
+                            buildMap {
+                                put("startLine", request.startLine)
+                                put("endLine", request.endLine)
+                                request.startColumn?.let { put("startColumn", it) }
+                                request.endColumn?.let { put("endColumn", it) }
+                            }
+                        )
+                    )
+                }
+                is PsiUtils.TextRangeResult.Success -> {
+                    return RefactoringResult(
+                        success = false,
+                        error = RefactoringError(
+                            "NOT_IMPLEMENTED",
+                            "Extract method processor integration is not yet implemented. Text range calculation works (${rangeResult.startOffset}-${rangeResult.endOffset})."
+                        )
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            return RefactoringResult(
+                success = false,
+                error = RefactoringError(
+                    "INTERNAL_ERROR",
+                    "Failed to extract method: ${e.message}",
+                    mapOf("exception" to (e::class.simpleName ?: "Unknown"))
+                )
+            )
+        }
     }
     
     private fun executeRename(
         project: Project,
         element: PsiElement,
         newName: String,
-        searchInComments: Boolean
+        searchInStrings: Boolean
     ): RefactoringResult {
-        val processor = RenameProcessor(project, element, newName, searchInComments, false)
+        val processor = RenameProcessor(project, element, newName, false, searchInStrings)
         
         val changedFiles = ReadAction.compute<Set<String>, RuntimeException> {
             val usages = processor.findUsages()
