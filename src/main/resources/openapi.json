@@ -79,6 +79,7 @@
               "example": {
                 "filePath": "src/main/kotlin/com/example/Service.kt",
                 "offset": 150,
+                "oldName": "Service",
                 "newName": "UserService"
               }
             }
@@ -134,6 +135,21 @@
                       "error": {
                         "code": "INVALID_ELEMENT",
                         "message": "Element at offset 150 is not renameable"
+                      }
+                    }
+                  },
+                  "nameMismatch": {
+                    "summary": "Name at offset doesn't match expected",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "NAME_MISMATCH",
+                        "message": "Expected 'Service' at offset 150, but found 'UserService'. File may have changed.",
+                        "details": {
+                          "expectedName": "Service",
+                          "actualName": "UserService",
+                          "offset": 150
+                        }
                       }
                     }
                   }
@@ -247,7 +263,7 @@
       },
       "RenameRequest": {
         "type": "object",
-        "required": ["filePath", "offset", "newName"],
+        "required": ["filePath", "offset", "oldName", "newName"],
         "properties": {
           "filePath": {
             "type": "string",
@@ -256,8 +272,13 @@
           },
           "offset": {
             "type": "integer",
-            "description": "Character offset in the file where the element is located",
+            "description": "Character offset in the file where the element is located. This is the position (0-based) in the file content where the element name starts. Used to precisely locate the element.",
             "example": 150
+          },
+          "oldName": {
+            "type": "string",
+            "description": "Current name of the element to rename. Used to verify that the element at the offset matches what you expect (safeguard against outdated file offsets).",
+            "example": "Service"
           },
           "newName": {
             "type": "string",
@@ -342,6 +363,7 @@
                 "description": "Error code for programmatic handling",
                 "enum": [
                   "NAME_COLLISION",
+                  "NAME_MISMATCH",
                   "INVALID_ELEMENT",
                   "READ_ONLY_FILE",
                   "FILE_NOT_FOUND",
