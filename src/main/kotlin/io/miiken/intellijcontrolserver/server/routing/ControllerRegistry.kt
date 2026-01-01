@@ -52,13 +52,15 @@ class ControllerRegistry {
     ) {
         val fullPath = buildPath(basePath, methodPath)
         val metadata = extractOperationMetadata(method, classTag)
+        val requestBodyType = extractRequestBodyType(method)
         
         val route = Route(
             method = httpMethod,
             path = fullPath,
             controllerInstance = controller,
             handlerMethod = method,
-            operation = metadata
+            operation = metadata,
+            requestBodyType = requestBodyType
         )
         
         routes.add(route)
@@ -96,6 +98,14 @@ class ControllerRegistry {
         return routes.firstOrNull { route ->
             route.method == method && matchesPath(route.path, path)
         }
+    }
+    
+    private fun extractRequestBodyType(method: Method): Class<*>? {
+        return method.parameters.firstOrNull { param ->
+            !param.isAnnotationPresent(jakarta.ws.rs.PathParam::class.java) &&
+            param.type != com.sun.net.httpserver.HttpExchange::class.java &&
+            param.type.packageName?.startsWith("io.miiken") == true
+        }?.type
     }
     
     private fun matchesPath(routePath: String, requestPath: String): Boolean {

@@ -12,31 +12,31 @@ data class RenameRequest(
     val filePath: String,
     
     @Schema(
-        description = "Character offset in the file where the element is located (0-based position)",
-        example = "150",
+        description = "Line number where the element is located (1-based, as shown in editors)",
+        example = "15",
         required = true
     )
-    val offset: Int,
+    val line: Int,
     
     @Schema(
-        description = "Current name of the element. Used to verify the element at the offset matches expectations.",
-        example = "Service",
+        description = "Current name of the element to rename. Used to locate and verify the correct element on the line.",
+        example = "processUser",
         required = true
     )
     val oldName: String,
     
     @Schema(
         description = "New name for the element",
-        example = "UserService",
+        example = "handleUser",
         required = true
     )
     val newName: String,
     
     @Schema(
-        description = "Whether to rename occurrences in comments",
-        example = "false",
+        description = "Whether to update occurrences in string literals (e.g., logging: logger.info(\"methodName | ...\")). Defaults to true for methods/functions only.",
+        example = "true",
         required = false
     )
-    val searchInComments: Boolean = false
+    val searchInStrings: Boolean? = null
 )
 

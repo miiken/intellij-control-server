@@ -97,7 +97,7 @@ class ControllerDispatcher(private val registry: ControllerRegistry) : HttpHandl
         val contentType = produces?.value?.firstOrNull() ?: "application/json"
         
         when {
-            result == null -> ResponseBuilder.sendSuccess(exchange, mapOf<String, Any>())
+            result == null -> ResponseBuilder.sendSuccess(exchange, mapOf("success" to true))
             result is String && contentType == "text/html" -> {
                 exchange.responseHeaders.set("Content-Type", "text/html; charset=UTF-8")
                 val bytes = result.toByteArray(Charsets.UTF_8)
@@ -105,10 +105,6 @@ class ControllerDispatcher(private val registry: ControllerRegistry) : HttpHandl
                 exchange.responseBody.use { it.write(bytes) }
             }
             result is String -> ResponseBuilder.sendText(exchange, result)
-            result is Map<*, *> -> {
-                @Suppress("UNCHECKED_CAST")
-                ResponseBuilder.sendSuccess(exchange, result as Map<String, Any>)
-            }
             else -> ResponseBuilder.sendSuccess(exchange, result)
         }
     }

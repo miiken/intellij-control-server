@@ -18,11 +18,7 @@ object ResponseBuilder {
      * @param statusCode HTTP status code (default: 200)
      */
     fun sendSuccess(exchange: HttpExchange, data: Any, statusCode: Int = 200) {
-        val response = mapOf("success" to true) + when (data) {
-            is Map<*, *> -> @Suppress("UNCHECKED_CAST") (data as Map<String, Any>)
-            else -> mapOf("data" to data)
-        }
-        sendJson(exchange, response, statusCode)
+        sendJson(exchange, data, statusCode)
     }
     
     /**

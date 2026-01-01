@@ -312,6 +312,223 @@ val result = RefactoringService.rename(project, request)
 - `object` for singletons with no state
 - Application/Project services for properly managed shared state
 
+### Data Classes for API Serialization
+
+**Always use data classes for API request and response serialization.** Never use `Map<String, Any>` or manually build JSON objects.
+
+#### ❌ Bad (Using maps)
+```kotlin
+fun health(): Map<String, Any> {
+    return mapOf(
+        "status" to "ok",
+        "version" to "1.0.0",
+        "uptime" to getUptime(),
+        "timestamp" to System.currentTimeMillis()
+    )
+}
+
+fun processRequest(exchange: HttpExchange) {
+    val body = parseJsonMap(exchange)
+    val taskId = body["taskId"] as? String ?: return
+    val priority = body["priority"] as? Int ?: 0
+    // ...
+}
+```
+
+#### ✅ Good (Using data classes)
+```kotlin
+@Schema(description = "Health check response")
+data class HealthResponse(
+    @Schema(description = "Server status", example = "ok")
+    val status: String,
+    
+    @Schema(description = "Plugin version", example = "1.0.0")
+    val version: String,
+    
+    @Schema(description = "Server uptime in seconds", example = "3600")
+    val uptime: Long,
+    
+    @Schema(description = "Current timestamp", example = "1735725521000")
+    val timestamp: Long
+)
+
+fun health(): HealthResponse {
+    return HealthResponse(
+        status = "ok",
+        version = "1.0.0",
+        uptime = getUptime(),
+        timestamp = System.currentTimeMillis()
+    )
+}
+
+@Schema(description = "Request to create or update a task")
+data class TaskRequest(
+    @Schema(description = "Task ID", required = true)
+    val taskId: String,
+    
+    @Schema(description = "Task priority", example = "5")
+    val priority: Int = 0
+)
+
+fun processRequest(request: TaskRequest) {
+    // Direct access with type safety
+    val taskId = request.taskId
+    val priority = request.priority
+    // ...
+}
+```
+
+**Why use data classes?**
+
+1. **Type Safety**: Compile-time checking of field types and names
+   ```kotlin
+   // Compile error - typo caught at compile time
+   val status = response.stutus  // ❌ Won't compile
+   
+   // vs Map - runtime error
+   val status = map["stutus"]  // ✅ Compiles, fails at runtime
+   ```
+
+2. **IDE Support**: Auto-completion, refactoring, find usages
+   ```kotlin
+   // IDE knows all fields and can auto-complete
+   response.| // Shows: status, version, uptime, timestamp
+   ```
+
+3. **Documentation**: Swagger/OpenAPI auto-generates schemas
+   ```kotlin
+   @ApiResponse(
+       responseCode = "200",
+       content = [Content(
+           schema = Schema(implementation = HealthResponse::class)
+       )]
+   )
+   ```
+
+4. **Validation**: Built-in validation and defaults
+   ```kotlin
+   data class CreateTaskRequest(
+       val name: String,
+       val priority: Int = 0,  // Default value
+       val tags: List<String> = emptyList()
+   ) {
+       init {
+           require(name.isNotBlank()) { "Name cannot be blank" }
+           require(priority in 0..10) { "Priority must be 0-10" }
+       }
+   }
+   ```
+
+5. **Refactoring Safety**: Renaming fields updates all usages
+   ```kotlin
+   // Rename 'uptime' to 'uptimeSeconds' - IDE updates everywhere
+   data class HealthResponse(
+       // ... 
+       val uptimeSeconds: Long  // Renamed
+   )
+   ```
+
+6. **Serialization**: Gson/Jackson handle data classes automatically
+   ```kotlin
+   // No manual JSON building
+   val json = gson.toJson(response)  // Automatic
+   val obj = gson.fromJson(json, HealthResponse::class.java)  // Automatic
+   ```
+
+7. **Testing**: Easy to construct and verify
+   ```kotlin
+   @Test
+   fun `should return health response`() {
+       val expected = HealthResponse(
+           status = "ok",
+           version = "1.0.0", 
+           uptime = 100,
+           timestamp = 123456789
+       )
+       
+       val actual = controller.health()
+       
+       assertEquals(expected, actual)  // Data class equals works!
+   }
+   ```
+
+**Best Practices:**
+
+1. **One data class per API endpoint request/response**
+   ```kotlin
+   data class RenameRequest(...)
+   data class RenameResponse(...)
+   data class ExtractMethodRequest(...)
+   data class ExtractMethodResponse(...)
+   ```
+
+2. **Place data classes in the `models` package**
+   ```
+   src/main/kotlin/io/miiken/intellijcontrolserver/models/
+   ├── RenameRequest.kt
+   ├── ExtractMethodRequest.kt
+   ├── RefactoringResult.kt
+   └── HealthResponse.kt
+   ```
+
+3. **Use Swagger `@Schema` annotations ONLY for public API classes** (request/response objects exposed via API endpoints)
+   ```kotlin
+   // ✅ Public API - use @Schema
+   @Schema(description = "Request to rename a symbol")
+   data class RenameRequest(
+       @Schema(description = "File path", example = "src/Main.kt")
+       val filePath: String,
+       
+       @Schema(description = "Line number", example = "10")
+       val line: Int
+   )
+   
+   // ✅ Internal data class - no @Schema needed
+   data class ValidationResult(
+       val isValid: Boolean,
+       val errors: List<String>
+   )
+   ```
+
+4. **Controllers return data classes directly**
+   ```kotlin
+   @GET
+   @Path("/health")
+   fun health(): HealthResponse {  // Return data class, not Map
+       return HealthResponse(...)
+   }
+   ```
+
+5. **Let serialization frameworks handle JSON**
+   ```kotlin
+   // ❌ Don't manually build JSON
+   val json = """{"status":"ok","version":"1.0.0"}"""
+   
+   // ✅ Let Gson/Jackson handle it
+   val response = HealthResponse("ok", "1.0.0", ...)
+   ResponseBuilder.sendSuccess(exchange, response)  // Gson serializes
+   ```
+
+**When to use `@Schema` annotations:**
+
+✅ **Use for public API classes:**
+- Request objects (e.g., `RenameRequest`, `ExtractMethodRequest`)
+- Response objects (e.g., `HealthResponse`, `RefactoringResult`)
+- Any data class directly serialized in API responses
+
+❌ **Don't use for internal classes:**
+- Internal utility classes (e.g., `ValidationResult`, `CacheEntry`)
+- Data classes not exposed through API endpoints
+- Internal DTOs used only between services
+
+**When maps are acceptable:**
+
+- **Internal utilities**: Temporary data structures not exposed via API
+- **Dynamic/unknown structure**: When the structure truly isn't known at compile time
+- **Legacy integration**: Interfacing with old code that expects maps
+
+But **never** for API endpoints that you control.
+
 ## Code Organization
 
 ### File Structure
