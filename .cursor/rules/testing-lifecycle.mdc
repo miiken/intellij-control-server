@@ -1,0 +1,311 @@
+# Testing Lifecycle: Plugin Development
+
+## Core Principle: Never Manually Install During Development
+
+**Use the sandbox workflow for all development and testing.**
+
+## Development Testing (Primary Workflow)
+
+### Use `gradle runIde` - Sandbox IntelliJ
+
+```bash
+gradle runIde
+```
+
+**What it does:**
+- Launches a **separate IntelliJ window** with your plugin pre-installed
+- Completely isolated from your main IntelliJ
+- Uses sandbox directories for settings/logs
+- No manual install/uninstall needed
+
+**When to use:**
+- ✅ During development
+- ✅ Testing new features
+- ✅ Debugging
+- ✅ Quick iterations
+
+### Iteration Cycle
+
+```bash
+# 1. Make code changes
+vim src/main/kotlin/...
+
+# 2. Close sandbox IntelliJ (if running)
+
+# 3. Launch fresh sandbox
+gradle runIde
+
+# 4. Test in sandbox window
+
+# 5. Repeat
+```
+
+**Speed it up:**
+```bash
+# Skip tests during development
+gradle runIde -x test
+
+# Use build cache
+gradle runIde --build-cache
+```
+
+## Production Testing (Rare)
+
+### Use `gradle buildPlugin` - Manual Install
+
+```bash
+gradle buildPlugin
+# Creates: build/distributions/intellij-control-server-1.0.0.zip
+```
+
+**When to use:**
+- ❌ NOT for development (too slow)
+- ✅ Final testing before release
+- ✅ Testing in your actual IntelliJ environment
+- ✅ Verifying production package
+
+**Manual install steps:**
+1. `Settings → Plugins → Install from Disk`
+2. Select the ZIP file
+3. Restart IntelliJ
+
+## Testing the HTTP Server
+
+### In Sandbox (Development)
+
+```bash
+# Terminal 1: Run sandbox
+gradle runIde
+
+# Terminal 2: Wait for startup, then test
+curl http://127.0.0.1:8765/health
+```
+
+**Expected response:**
+```json
+{
+  "success": true,
+  "status": "ok",
+  "version": "1.0.0",
+  "uptime": 123,
+  "timestamp": 1735725521000
+}
+```
+
+### Check Logs
+
+**Sandbox logs location:**
+```bash
+~/Library/Logs/JetBrains/IdeaIC{version}/idea-sandbox/system/log/idea.log
+```
+
+**Look for:**
+```
+INFO - ControlServerService - ControlServerService initialized
+INFO - ControlServer - ✓ IntelliJ Control Server started successfully on http://127.0.0.1:8765
+```
+
+**Quick check:**
+```bash
+tail -f ~/Library/Logs/JetBrains/*/idea-sandbox/system/log/idea.log | grep -i control
+```
+
+## Unit Tests
+
+### Run Before Committing
+
+```bash
+gradle test
+```
+
+**When to run:**
+- ✅ Before every commit
+- ✅ After significant changes
+- ✅ As part of CI/CD
+
+### Test Coverage
+
+Aim for 80%+ coverage on:
+- Configuration logic (`ServerConfig`, `ConfigLoader`)
+- HTTP utilities (`ResponseBuilder`)
+- Request handlers (`HealthHandler`, etc.)
+
+## Common Testing Scenarios
+
+### 1. Plugin Startup
+**Test:** Does the plugin start without errors?
+```bash
+gradle runIde
+# Watch logs for "✓ IntelliJ Control Server started successfully"
+```
+
+### 2. Configuration Changes
+**Test:** Settings UI and config file loading
+1. Open sandbox: `gradle runIde`
+2. Go to `Settings → Tools → IntelliJ Control Server`
+3. Change port to 8766
+4. Click Apply
+5. Test: `curl http://127.0.0.1:8766/health`
+
+### 3. Port Conflicts
+**Test:** What happens if port is already taken?
+```bash
+# Start something on port 8765
+nc -l 8765 &
+
+# Run sandbox
+gradle runIde
+
+# Check logs for bind error and graceful handling
+```
+
+### 4. Invalid Configuration
+**Test:** Validation works correctly
+1. Try setting port to 100 (invalid)
+2. Try blank host
+3. Try invalid log level
+4. Verify error messages appear
+
+### 5. Server Restart
+**Test:** Restart applies new config
+1. Start with port 8765
+2. Change to 8766 in settings
+3. Click "Restart" when prompted
+4. Verify server moved to new port
+
+## Debugging
+
+### Enable Debug Mode
+
+```bash
+gradle runIde --debug-jvm
+```
+
+Then attach debugger from your main IntelliJ:
+1. `Run → Edit Configurations → + → Remote JVM Debug`
+2. Port: `5005`
+3. Set breakpoints
+4. Start debug session
+
+### Increase Logging
+
+In sandbox IntelliJ:
+1. `Help → Diagnostic Tools → Debug Log Settings`
+2. Add: `io.miiken.intellijcontrolserver`
+3. Restart sandbox
+4. All plugin logs will be verbose
+
+## Troubleshooting
+
+### Sandbox Won't Start
+```bash
+# Clean build
+gradle clean
+rm -rf build .gradle
+
+# Try again
+gradle runIde
+```
+
+### Plugin Not Loading
+```bash
+# Verify plugin.xml
+gradle verifyPlugin
+
+# Check for compilation errors
+gradle build
+```
+
+### Port Already in Use
+```bash
+# Find what's using the port
+lsof -i :8765
+
+# Kill it or change port in config
+```
+
+### Changes Not Reflected
+- **Always close sandbox** before running `gradle runIde` again
+- Don't try to hot-reload structural changes
+- For quick method body changes, use `Cmd + Shift + F9` in sandbox
+
+## CI/CD Testing
+
+### Pre-commit Checks
+```bash
+# Run all tests
+gradle test
+
+# Verify plugin
+gradle verifyPlugin
+
+# Build successfully
+gradle buildPlugin
+```
+
+### Automated Testing
+```bash
+# In CI pipeline
+gradle clean test verifyPlugin buildPlugin
+```
+
+## Performance Testing
+
+### Server Response Time
+```bash
+# Benchmark health endpoint
+time curl http://127.0.0.1:8765/health
+
+# Should be < 50ms
+```
+
+### Memory Usage
+Monitor sandbox IntelliJ memory:
+1. `Help → Diagnostic Tools → Activity Monitor`
+2. Look for memory leaks over time
+3. Test with long-running server
+
+### Concurrent Requests
+```bash
+# Test multiple simultaneous requests
+for i in {1..10}; do
+  curl http://127.0.0.1:8765/health &
+done
+wait
+```
+
+## Testing Checklist
+
+Before committing:
+- [ ] Unit tests pass: `gradle test`
+- [ ] Plugin builds: `gradle buildPlugin`
+- [ ] Sandbox starts: `gradle runIde`
+- [ ] Health endpoint responds: `curl http://127.0.0.1:8765/health`
+- [ ] Settings UI works
+- [ ] No errors in sandbox logs
+
+Before releasing:
+- [ ] All of the above ✅
+- [ ] Manual install in production IntelliJ
+- [ ] Test with real projects
+- [ ] Verify all API endpoints
+- [ ] Check performance
+- [ ] Review logs for warnings
+
+## Quick Reference
+
+| Command | Purpose | Frequency |
+|---------|---------|-----------|
+| `gradle runIde` | Launch sandbox | Every code change |
+| `gradle test` | Run unit tests | Before commit |
+| `gradle buildPlugin` | Build ZIP | Before release |
+| `gradle verifyPlugin` | Validate plugin.xml | Before release |
+| `gradle clean` | Clean build | When stuck |
+
+## Summary
+
+**Development:** Always use `gradle runIde`  
+**Testing:** Unit tests + sandbox testing  
+**Production:** Only use `buildPlugin` for final verification  
+**Debugging:** Use `--debug-jvm` and attach debugger  
+**Never:** Manually install during development
