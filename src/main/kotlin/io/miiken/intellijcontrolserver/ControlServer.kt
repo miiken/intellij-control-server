@@ -5,6 +5,7 @@ import com.intellij.openapi.diagnostic.Logger
 import com.sun.net.httpserver.HttpServer
 import io.miiken.intellijcontrolserver.config.ServerConfig
 import io.miiken.intellijcontrolserver.server.handlers.HealthHandler
+import io.miiken.intellijcontrolserver.server.handlers.OpenApiHandler
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
@@ -85,8 +86,10 @@ class ControlServer(private val config: ServerConfig) : Disposable {
         logger.info("Registering HTTP handlers...")
         
         server.createContext("/health", HealthHandler(startTime))
+        server.createContext("/openapi.json", OpenApiHandler())
         
         logger.info("✓ Registered health check handler at /health")
+        logger.info("✓ Registered OpenAPI spec handler at /openapi.json")
     }
     
     /**
