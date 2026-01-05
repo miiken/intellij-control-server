@@ -18,6 +18,34 @@
 
 ---
 
+### Phase 1.5: MCP Server Support 🔌 **IN PROGRESS**
+**Status**: In Progress  
+**Duration**: 2-3 days  
+**Deliverable**: Model Context Protocol integration
+
+**Features**:
+- MCP server running alongside HTTP REST API
+- Expose all endpoints as MCP tools
+- Self-describing schemas for tool discovery
+- Native Cursor/Claude Desktop integration
+- Streaming support for long operations
+- Configuration in settings UI
+
+**MCP Tools**:
+- `intellij_health_check` - Get server status
+- `intellij_rename_symbol` - Rename classes, methods, variables
+- `intellij_extract_method` - Extract code into method (planned)
+
+**Benefits**:
+- Native tool integration in Cursor
+- Self-documenting API
+- Better error handling
+- Streaming for real-time feedback
+
+**Release**: Include in v1.0.0
+
+---
+
 ### Phase 2: Basic Refactoring 🔄 **NEXT**
 **Status**: Not started  
 **Duration**: 2-3 days  
@@ -36,7 +64,7 @@
 ---
 
 ### Phase 3: Release v1.0 📦 **MILESTONE**
-**Status**: Not started  
+**Status**: ✅ **COMPLETE**  
 **Duration**: 2-3 days  
 **Deliverable**: First production release for team
 
@@ -48,7 +76,8 @@
 - Feedback collection
 
 **Version**: `1.0.0`  
-**Audience**: Internal team
+**Audience**: Internal team  
+**Released**: January 1, 2026
 
 ---
 
