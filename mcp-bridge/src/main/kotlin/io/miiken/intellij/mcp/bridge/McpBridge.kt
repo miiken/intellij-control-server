@@ -13,7 +13,11 @@ import java.io.*
  */
 interface McpBridgeService {
     @JsonRpcMethod("initialize")
-    fun initialize(@JsonRpcParam("params") params: Map<String, Any>?): InitializeResponse
+    fun initialize(
+        @JsonRpcParam("protocolVersion") protocolVersion: String?,
+        @JsonRpcParam("capabilities") capabilities: Map<String, Any>?,
+        @JsonRpcParam("clientInfo") clientInfo: Map<String, Any>?
+    ): InitializeResponse
     
     @JsonRpcMethod("tools/list")
     fun listTools(): ToolsListResponse
@@ -65,10 +69,16 @@ data class ContentItem(
 class McpBridgeServiceImpl(private val httpBaseUrl: String) : McpBridgeService {
     private val gson = Gson()
     
-    override fun initialize(params: Map<String, Any>?): InitializeResponse {
-        System.err.println("INFO: MCP initialize called")
+    override fun initialize(
+        protocolVersion: String?,
+        capabilities: Map<String, Any>?,
+        clientInfo: Map<String, Any>?
+    ): InitializeResponse {
+        System.err.println("INFO: MCP initialize called (client protocol: $protocolVersion)")
+        // Support multiple protocol versions
+        val responseVersion = protocolVersion ?: "2024-11-05"
         return InitializeResponse(
-            protocolVersion = "2024-11-05",
+            protocolVersion = responseVersion,
             serverInfo = ServerInfo(
                 name = "intellij-mcp-bridge",
                 version = "1.0.0"
