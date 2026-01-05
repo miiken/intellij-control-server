@@ -133,32 +133,20 @@ class McpBridgeInstaller : StartupActivity {
         val wrapperPath = File(System.getProperty("user.home"), ".intellij-mcp-bridge/bridge.sh").absolutePath
         
         return """
-            <html>
-            <body>
-            <p><b>✅ MCP Bridge installed successfully!</b></p>
-            <p><b>📍 Location:</b> <code>$wrapperPath</code></p>
-            <br/>
+            <html><body>
+            <p><b>MCP Bridge installed successfully!</b></p>
+            <p><b>Location:</b> <code>$wrapperPath</code></p>
             <p><b>To enable in Cursor AI:</b></p>
             <ol>
-              <li>Open Cursor settings: <b>⌘+Shift+J</b> (Mac) or <b>Ctrl+Shift+J</b> (Windows/Linux)</li>
-              <li>Find the <code>"mcpServers"</code> section</li>
-              <li>Add the <code>"intellij"</code> entry (see below)</li>
+              <li>Open Cursor settings (Cmd+Shift+J or Ctrl+Shift+J)</li>
+              <li>Find the "mcpServers" section</li>
+              <li>Add the "intellij" entry (see below)</li>
               <li>Restart Cursor</li>
             </ol>
-            <br/>
-            <p><b>If you already have MCP servers configured:</b></p>
-            <p>Just add this entry to your existing <code>"mcpServers"</code> object:</p>
-            <pre style="background-color: #f5f5f5; padding: 8px; border-radius: 4px;">"intellij": {
-  "command": "$wrapperPath"
-}</pre>
-            <br/>
-            <p><b>If this is your first MCP server:</b></p>
-            <p>Use this complete configuration:</p>
-            <pre style="background-color: #f5f5f5; padding: 8px; border-radius: 4px;">$cursorConfig</pre>
-            <br/>
-            <p><i>💡 Tip: The "intellij" entry won't affect your other MCP servers.</i></p>
-            </body>
-            </html>
+            <p><b>Configuration to add:</b></p>
+            <pre>$cursorConfig</pre>
+            <p><i>Tip: This won't affect your other MCP servers.</i></p>
+            </body></html>
         """.trimIndent()
     }
 }
