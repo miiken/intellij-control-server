@@ -38,7 +38,19 @@ data class ServerConfig(
      * Enable MCP (Model Context Protocol) server on stdio
      * Default: true
      */
-    val enableMcp: Boolean = true
+    val enableMcp: Boolean = true,
+    
+    /**
+     * When renaming a method, also update string literals in the method body
+     * Default: true
+     */
+    val renameStringsInMethodBody: Boolean = true,
+    
+    /**
+     * When renaming a method, also update annotation properties attached to the method
+     * Default: true
+     */
+    val renameInAnnotations: Boolean = true
 ) {
     companion object {
         /**

@@ -13,7 +13,11 @@ import java.io.*
  */
 interface McpBridgeService {
     @JsonRpcMethod("initialize")
-    fun initialize(@JsonRpcParam("params") params: Map<String, Any>?): InitializeResponse
+    fun initialize(
+        @JsonRpcParam("protocolVersion") protocolVersion: String?,
+        @JsonRpcParam("capabilities") capabilities: Map<String, Any>?,
+        @JsonRpcParam("clientInfo") clientInfo: Map<String, Any>?
+    ): InitializeResponse
     
     @JsonRpcMethod("tools/list")
     fun listTools(): ToolsListResponse
@@ -21,7 +25,8 @@ interface McpBridgeService {
     @JsonRpcMethod("tools/call")
     fun callTool(
         @JsonRpcParam("name") name: String,
-        @JsonRpcParam("arguments") arguments: Map<String, Any>?
+        @JsonRpcParam("arguments") arguments: Map<String, Any>?,
+        @JsonRpcParam("_meta") meta: Map<String, Any>?
     ): ToolCallResponse
 }
 
@@ -65,10 +70,16 @@ data class ContentItem(
 class McpBridgeServiceImpl(private val httpBaseUrl: String) : McpBridgeService {
     private val gson = Gson()
     
-    override fun initialize(params: Map<String, Any>?): InitializeResponse {
-        System.err.println("INFO: MCP initialize called")
+    override fun initialize(
+        protocolVersion: String?,
+        capabilities: Map<String, Any>?,
+        clientInfo: Map<String, Any>?
+    ): InitializeResponse {
+        System.err.println("INFO: MCP initialize called (client protocol: $protocolVersion)")
+        // Support multiple protocol versions
+        val responseVersion = protocolVersion ?: "2024-11-05"
         return InitializeResponse(
-            protocolVersion = "2024-11-05",
+            protocolVersion = responseVersion,
             serverInfo = ServerInfo(
                 name = "intellij-mcp-bridge",
                 version = "1.0.0"
@@ -89,10 +100,10 @@ class McpBridgeServiceImpl(private val httpBaseUrl: String) : McpBridgeService {
         return response
     }
     
-    override fun callTool(name: String, arguments: Map<String, Any>?): ToolCallResponse {
+    override fun callTool(name: String, arguments: Map<String, Any>?, meta: Map<String, Any>?): ToolCallResponse {
         System.err.println("INFO: MCP tools/call: $name - forwarding to plugin")
         
-        // Forward to plugin's MCP endpoint
+        // Forward to plugin's MCP endpoint (ignore _meta, it's just for progress tracking)
         val requestBody = mapOf(
             "name" to name,
             "arguments" to (arguments ?: emptyMap<String, Any>())
@@ -132,10 +143,11 @@ class McpBridge(private val httpBaseUrl: String) {
                         
                         val response = processRequest(line)
                         
-                        System.err.println("DEBUG: Sending: $response")
-                        
-                        writer.println(response)
-                        writer.flush()
+                        if (response != null) {
+                            System.err.println("DEBUG: Sending: $response")
+                            writer.println(response)
+                            writer.flush()
+                        }
                         
                     } catch (e: Exception) {
                         System.err.println("ERROR: Request processing error: ${e.message}")
@@ -152,7 +164,15 @@ class McpBridge(private val httpBaseUrl: String) {
         System.err.println("INFO: MCP Bridge stopped")
     }
     
-    private fun processRequest(requestJson: String): String {
+    private fun processRequest(requestJson: String): String? {
+        val gson = Gson()
+        val request = gson.fromJson(requestJson, Map::class.java) as? Map<String, Any>
+        
+        if (request != null && !request.containsKey("id")) {
+            System.err.println("DEBUG: Ignoring notification (no response needed)")
+            return null
+        }
+        
         val requestBytes = requestJson.toByteArray(Charsets.UTF_8)
         val inputStream = ByteArrayInputStream(requestBytes)
         val outputStream = ByteArrayOutputStream()

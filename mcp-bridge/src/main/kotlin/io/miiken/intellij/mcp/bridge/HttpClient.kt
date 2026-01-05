@@ -24,13 +24,17 @@ object PluginHttpClient {
             .header("Content-Type", "application/json")
             .build()
         
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        
-        if (response.statusCode() != 200) {
-            throw RuntimeException("HTTP ${response.statusCode()}: ${response.body()}")
+        try {
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            
+            if (response.statusCode() != 200) {
+                throw RuntimeException("HTTP ${response.statusCode()}: ${response.body()}")
+            }
+            
+            return gson.fromJson(response.body(), responseClass.java)
+        } catch (e: java.net.ConnectException) {
+            throw RuntimeException("Cannot connect to IntelliJ plugin at $url. Is IntelliJ Control Server plugin running?", e)
         }
-        
-        return gson.fromJson(response.body(), responseClass.java)
     }
     
     /**
@@ -45,13 +49,17 @@ object PluginHttpClient {
             .header("Content-Type", "application/json")
             .build()
         
-        val response = client.send(request, HttpResponse.BodyHandlers.ofString())
-        
-        if (response.statusCode() != 200) {
-            throw RuntimeException("HTTP ${response.statusCode()}: ${response.body()}")
+        try {
+            val response = client.send(request, HttpResponse.BodyHandlers.ofString())
+            
+            if (response.statusCode() != 200) {
+                throw RuntimeException("HTTP ${response.statusCode()}: ${response.body()}")
+            }
+            
+            return gson.fromJson(response.body(), responseClass.java)
+        } catch (e: java.net.ConnectException) {
+            throw RuntimeException("Cannot connect to IntelliJ plugin at $url. Is IntelliJ Control Server plugin running?", e)
         }
-        
-        return gson.fromJson(response.body(), responseClass.java)
     }
 }
 

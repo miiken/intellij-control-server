@@ -110,16 +110,21 @@ object ToolRegistry {
                     }
                 }
                 "jar" -> {
-                    val jarPath = resource.path.substringAfter("file:").substringBefore("!")
+                    // Extract JAR path from jar:file:/path/to/file.jar!/package/path
+                    val jarUrlPath = resource.path.substringAfter("file:").substringBefore("!")
+                    // Decode URL encoding (e.g., %20 -> space)
+                    val jarPath = java.net.URLDecoder.decode(jarUrlPath, "UTF-8")
                     val jarFile = java.util.jar.JarFile(jarPath)
                     val packagePath = packageName.replace('.', '/')
                     
-                    jarFile.entries().asIterator().forEach { entry ->
-                        val name = entry.name
-                        if (name.startsWith(packagePath) && name.endsWith(".class")) {
-                            val className = name.removeSuffix(".class").replace('/', '.')
-                            if (className.startsWith(packageName) && !className.contains('$')) {
-                                classes.add(className)
+                    jarFile.use { jar ->
+                        jar.entries().asIterator().forEach { entry ->
+                            val name = entry.name
+                            if (name.startsWith(packagePath) && name.endsWith(".class")) {
+                                val className = name.removeSuffix(".class").replace('/', '.')
+                                if (className.startsWith(packageName) && !className.contains('$')) {
+                                    classes.add(className)
+                                }
                             }
                         }
                     }

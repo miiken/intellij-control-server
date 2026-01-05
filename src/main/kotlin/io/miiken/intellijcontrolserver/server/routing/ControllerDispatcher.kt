@@ -29,20 +29,26 @@ class ControllerDispatcher(private val registry: ControllerRegistry) : HttpHandl
         } catch (e: IllegalArgumentException) {
             ResponseBuilder.sendError(exchange, "INVALID_REQUEST", e.message ?: "Invalid request", statusCode = 400)
         } catch (e: Exception) {
-            when (e.javaClass.simpleName) {
-                "RefactoringException" -> handleRefactoringException(e, exchange)
+            val actualException = if (e is java.lang.reflect.InvocationTargetException && e.cause != null) {
+                e.cause!!
+            } else {
+                e
+            }
+            
+            when (actualException.javaClass.simpleName) {
+                "RefactoringException" -> handleRefactoringException(actualException, exchange)
                 "ProjectNotFoundException" -> ResponseBuilder.sendError(
                     exchange,
                     "PROJECT_NOT_FOUND",
-                    e.message ?: "Project not found",
+                    actualException.message ?: "Project not found",
                     statusCode = 404
                 )
                 else -> {
-                    logger.error("Error dispatching to controller", e)
+                    logger.error("Error dispatching to controller", actualException)
                     ResponseBuilder.sendError(
                         exchange,
                         "INTERNAL_ERROR",
-                        "Internal server error: ${e.message}",
+                        "Internal server error: ${actualException.message}",
                         statusCode = 500
                     )
                 }
@@ -110,7 +116,7 @@ class ControllerDispatcher(private val registry: ControllerRegistry) : HttpHandl
     }
     
     @Suppress("UNCHECKED_CAST")
-    private fun handleRefactoringException(e: Exception, exchange: HttpExchange) {
+    private fun handleRefactoringException(e: Throwable, exchange: HttpExchange) {
         val codeField = e.javaClass.getDeclaredField("code").apply { isAccessible = true }
         val detailsField = e.javaClass.getDeclaredField("details").apply { isAccessible = true }
         val statusCodeField = e.javaClass.getDeclaredField("statusCode").apply { isAccessible = true }

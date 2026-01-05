@@ -71,15 +71,15 @@ tasks {
         kotlinOptions.jvmTarget = "17"
     }
     
-    // Copy mcp-bridge JAR into plugin distribution
+    // Copy mcp-bridge fat JAR into plugin distribution
     named("prepareSandbox") {
-        dependsOn(":mcp-bridge:jar")
+        dependsOn(":mcp-bridge:fatJar")
         doLast {
-            val mcpBridgeJar = project(":mcp-bridge").tasks.getByName<Jar>("jar").archiveFile.get().asFile
+            val mcpBridgeFatJar = project(":mcp-bridge").tasks.getByName<Jar>("fatJar").archiveFile.get().asFile
             val pluginLibDir = file("${intellij.sandboxDir.get()}/plugins/${project.name}/lib")
             pluginLibDir.mkdirs()
             copy {
-                from(mcpBridgeJar)
+                from(mcpBridgeFatJar)
                 into(pluginLibDir)
                 rename { "mcp-bridge.jar" }
             }
@@ -87,9 +87,9 @@ tasks {
     }
     
     named("buildPlugin") {
-        dependsOn(":mcp-bridge:jar")
+        dependsOn(":mcp-bridge:fatJar")
         doLast {
-            val mcpBridgeJar = project(":mcp-bridge").tasks.getByName<Jar>("jar").archiveFile.get().asFile
+            val mcpBridgeFatJar = project(":mcp-bridge").tasks.getByName<Jar>("fatJar").archiveFile.get().asFile
             val pluginZip = file("build/distributions/${project.name}-${project.version}.zip")
             
             if (pluginZip.exists()) {
@@ -104,7 +104,7 @@ tasks {
                 }
                 
                 copy {
-                    from(mcpBridgeJar)
+                    from(mcpBridgeFatJar)
                     into(file("$tempDir/${project.name}/lib"))
                     rename { "mcp-bridge.jar" }
                 }
