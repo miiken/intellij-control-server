@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpServer
 import io.miiken.intellijcontrolserver.config.ServerConfig
 import io.miiken.intellijcontrolserver.server.controllers.ApiDocsController
 import io.miiken.intellijcontrolserver.server.controllers.HealthController
+import io.miiken.intellijcontrolserver.server.controllers.McpController
 import io.miiken.intellijcontrolserver.server.controllers.RefactoringController
 import io.miiken.intellijcontrolserver.server.openapi.OpenApiGenerator
 import io.miiken.intellijcontrolserver.server.routing.ControllerDispatcher
@@ -93,8 +94,8 @@ class ControlServer(private val config: ServerConfig) : Disposable {
         val registry = ControllerRegistry()
         
         registry.registerController(HealthController(startTime))
-        
         registry.registerController(RefactoringController())
+        registry.registerController(McpController())
         
         val openProjects = ProjectManager.getInstance().openProjects
         if (openProjects.isNotEmpty()) {
