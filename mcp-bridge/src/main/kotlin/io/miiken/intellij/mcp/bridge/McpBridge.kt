@@ -142,10 +142,11 @@ class McpBridge(private val httpBaseUrl: String) {
                         
                         val response = processRequest(line)
                         
-                        System.err.println("DEBUG: Sending: $response")
-                        
-                        writer.println(response)
-                        writer.flush()
+                        if (response != null) {
+                            System.err.println("DEBUG: Sending: $response")
+                            writer.println(response)
+                            writer.flush()
+                        }
                         
                     } catch (e: Exception) {
                         System.err.println("ERROR: Request processing error: ${e.message}")
@@ -162,7 +163,15 @@ class McpBridge(private val httpBaseUrl: String) {
         System.err.println("INFO: MCP Bridge stopped")
     }
     
-    private fun processRequest(requestJson: String): String {
+    private fun processRequest(requestJson: String): String? {
+        val gson = Gson()
+        val request = gson.fromJson(requestJson, Map::class.java) as? Map<String, Any>
+        
+        if (request != null && !request.containsKey("id")) {
+            System.err.println("DEBUG: Ignoring notification (no response needed)")
+            return null
+        }
+        
         val requestBytes = requestJson.toByteArray(Charsets.UTF_8)
         val inputStream = ByteArrayInputStream(requestBytes)
         val outputStream = ByteArrayOutputStream()
