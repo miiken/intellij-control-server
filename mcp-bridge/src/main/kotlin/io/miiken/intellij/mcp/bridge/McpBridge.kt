@@ -25,7 +25,8 @@ interface McpBridgeService {
     @JsonRpcMethod("tools/call")
     fun callTool(
         @JsonRpcParam("name") name: String,
-        @JsonRpcParam("arguments") arguments: Map<String, Any>?
+        @JsonRpcParam("arguments") arguments: Map<String, Any>?,
+        @JsonRpcParam("_meta") meta: Map<String, Any>?
     ): ToolCallResponse
 }
 
@@ -99,10 +100,10 @@ class McpBridgeServiceImpl(private val httpBaseUrl: String) : McpBridgeService {
         return response
     }
     
-    override fun callTool(name: String, arguments: Map<String, Any>?): ToolCallResponse {
+    override fun callTool(name: String, arguments: Map<String, Any>?, meta: Map<String, Any>?): ToolCallResponse {
         System.err.println("INFO: MCP tools/call: $name - forwarding to plugin")
         
-        // Forward to plugin's MCP endpoint
+        // Forward to plugin's MCP endpoint (ignore _meta, it's just for progress tracking)
         val requestBody = mapOf(
             "name" to name,
             "arguments" to (arguments ?: emptyMap<String, Any>())
