@@ -63,6 +63,12 @@
             instance="io.miiken.intellijcontrolserver.settings.ControlServerConfigurable"
             id="io.miiken.intellijcontrolserver.settings.ControlServerConfigurable"
             displayName="IntelliJ Control Server"/>
+        
+        <!-- Auto-install MCP bridge on startup -->
+        <postStartupActivity implementation="io.miiken.intellijcontrolserver.startup.McpBridgeInstaller"/>
+        
+        <!-- Notification group for MCP bridge installation -->
+        <notificationGroup id="IntelliJ Control Server" displayType="BALLOON"/>
     </extensions>
 
     <applicationListeners>

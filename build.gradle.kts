@@ -71,6 +71,54 @@ tasks {
         kotlinOptions.jvmTarget = "17"
     }
     
+    // Copy mcp-bridge JAR into plugin distribution
+    named("prepareSandbox") {
+        dependsOn(":mcp-bridge:jar")
+        doLast {
+            val mcpBridgeJar = project(":mcp-bridge").tasks.getByName<Jar>("jar").archiveFile.get().asFile
+            val pluginLibDir = file("${intellij.sandboxDir.get()}/plugins/${project.name}/lib")
+            pluginLibDir.mkdirs()
+            copy {
+                from(mcpBridgeJar)
+                into(pluginLibDir)
+                rename { "mcp-bridge.jar" }
+            }
+        }
+    }
+    
+    named("buildPlugin") {
+        dependsOn(":mcp-bridge:jar")
+        doLast {
+            val mcpBridgeJar = project(":mcp-bridge").tasks.getByName<Jar>("jar").archiveFile.get().asFile
+            val pluginZip = file("build/distributions/${project.name}-${project.version}.zip")
+            
+            if (pluginZip.exists()) {
+                // Unzip, add JAR, re-zip
+                val tempDir = file("build/tmp/plugin-repack")
+                tempDir.deleteRecursively()
+                tempDir.mkdirs()
+                
+                copy {
+                    from(zipTree(pluginZip))
+                    into(tempDir)
+                }
+                
+                copy {
+                    from(mcpBridgeJar)
+                    into(file("$tempDir/${project.name}/lib"))
+                    rename { "mcp-bridge.jar" }
+                }
+                
+                pluginZip.delete()
+                ant.withGroovyBuilder {
+                    "zip"("destfile" to pluginZip) {
+                        "fileset"("dir" to tempDir)
+                    }
+                }
+            }
+        }
+    }
+    
     test {
         useJUnitPlatform {
             includeEngines("junit-jupiter", "junit-vintage")

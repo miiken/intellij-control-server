@@ -42,10 +42,12 @@ object ToolRegistry {
     private fun loadAllTools() {
         val toolClasses = findToolClasses()
         
+        logger.info("Attempting to load ${toolClasses.size} tool classes")
+        
         toolClasses.forEach { className ->
             try {
-                Class.forName(className)
-                logger.debug("Loaded tool class: $className")
+                Class.forName(className, true, ToolRegistry::class.java.classLoader)
+                logger.info("Successfully loaded tool class: $className")
             } catch (e: Exception) {
                 logger.error("Failed to load tool class: $className", e)
             }
@@ -63,19 +65,27 @@ object ToolRegistry {
         val toolClasses = mutableListOf<String>()
         
         try {
-            val classLoader = Thread.currentThread().contextClassLoader
+            // Use this class's classloader (the plugin classloader) instead of thread context
+            val classLoader = ToolRegistry::class.java.classLoader
             val packagePath = toolPackage.replace('.', '/')
             val resources = classLoader.getResources(packagePath)
+            
+            logger.info("Scanning for tools in package: $toolPackage using classLoader: ${classLoader.javaClass.name}")
             
             while (resources.hasMoreElements()) {
                 val resource = resources.nextElement()
                 val protocol = resource.protocol
                 
+                logger.info("Found resource: $resource with protocol: $protocol")
+                
                 if (protocol == "file" || protocol == "jar") {
                     val classes = findClassesInResource(resource, toolPackage)
+                    logger.info("Found ${classes.size} classes in resource: $resource")
                     toolClasses.addAll(classes)
                 }
             }
+            
+            logger.info("Total tool classes found: ${toolClasses.size}, classes: $toolClasses")
         } catch (e: Exception) {
             logger.error("Failed to scan for tool classes", e)
         }
