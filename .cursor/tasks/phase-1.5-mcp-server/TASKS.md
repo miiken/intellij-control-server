@@ -39,14 +39,22 @@
 ### Task 1.5.4: Rename Symbol Tool
 - [ ] Create `RenameSymbolTool`
   - [ ] Tool definition and schema
-  - [ ] Implementation (call RefactoringService)
+  - [ ] Implementation (call RefactoringService.rename)
   - [ ] Parameter validation
+  - [ ] Error handling
+  - [ ] Tests
+
+### Task 1.5.5: Extract Method Tool
+- [ ] Create `ExtractMethodTool`
+  - [ ] Tool definition and schema
+  - [ ] Implementation (call RefactoringService.extractMethod)
+  - [ ] Parameter validation (startLine, endLine, optional columns)
   - [ ] Error handling
   - [ ] Tests
 
 ## Integration
 
-### Task 1.5.5: Lifecycle Management
+### Task 1.5.6: Lifecycle Management
 - [ ] Start MCP server on IntelliJ startup
   - [ ] Integrate with `ControlServerApplicationListener`
   - [ ] Start in background thread
@@ -56,7 +64,7 @@
   - [ ] Close stdio streams
   - [ ] Terminate threads
 
-### Task 1.5.6: Configuration
+### Task 1.5.7: Configuration
 - [ ] Add MCP settings to `ServerConfig`
   - [ ] Enable/disable MCP server
   - [ ] Tool enable/disable flags
@@ -67,7 +75,7 @@
 
 ## Launcher Script
 
-### Task 1.5.7: MCP Launcher
+### Task 1.5.8: MCP Launcher
 - [ ] Create launcher script for Cursor
   - [ ] Shell script (macOS/Linux)
   - [ ] Batch script (Windows)
@@ -77,7 +85,7 @@
 
 ## Testing
 
-### Task 1.5.8: Unit Tests
+### Task 1.5.9: Unit Tests
 - [ ] Test `McpServer`
   - [ ] Request parsing
   - [ ] Response formatting
@@ -89,7 +97,7 @@
   - [ ] `HealthCheckTool`
   - [ ] `RenameSymbolTool`
 
-### Task 1.5.9: Integration Tests
+### Task 1.5.10: Integration Tests
 - [ ] Test with MCP Inspector
   - [ ] Initialize connection
   - [ ] List tools
@@ -101,7 +109,7 @@
 
 ## Documentation
 
-### Task 1.5.10: User Documentation
+### Task 1.5.11: User Documentation
 - [ ] Update `README.md`
   - [ ] MCP overview
   - [ ] Benefits explanation
@@ -114,7 +122,7 @@
   - [ ] Note about MCP alternative
   - [ ] Link to MCP docs
 
-### Task 1.5.11: Developer Documentation
+### Task 1.5.12: Developer Documentation
 - [ ] Document MCP architecture
   - [ ] How it works
   - [ ] Tool development guide
@@ -126,7 +134,7 @@
 
 ## Release Preparation
 
-### Task 1.5.12: Final Testing
+### Task 1.5.13: Final Testing
 - [ ] End-to-end testing
   - [ ] Start IntelliJ
   - [ ] MCP server starts automatically
@@ -141,7 +149,7 @@
   - [ ] Memory usage
   - [ ] Thread safety
 
-### Task 1.5.13: Release Checklist
+### Task 1.5.14: Release Checklist
 - [ ] All tests passing
 - [ ] Documentation complete
 - [ ] Code reviewed

@@ -117,6 +117,62 @@ Provide an MCP server alongside the existing HTTP REST API to offer:
 }
 ```
 
+#### 3. `intellij_extract_method`
+**Description**: Extract selected code into a new method
+
+**Input Schema**:
+```json
+{
+  "type": "object",
+  "properties": {
+    "projectName": {
+      "type": "string",
+      "description": "Name of the IntelliJ project"
+    },
+    "filePath": {
+      "type": "string",
+      "description": "Path to file (relative to project root)"
+    },
+    "startLine": {
+      "type": "number",
+      "description": "Start line of code selection (1-based)"
+    },
+    "endLine": {
+      "type": "number",
+      "description": "End line of code selection (1-based)"
+    },
+    "startColumn": {
+      "type": "number",
+      "description": "Start column on startLine (0-based, optional)"
+    },
+    "endColumn": {
+      "type": "number",
+      "description": "End column on endLine (0-based, optional)"
+    },
+    "methodName": {
+      "type": "string",
+      "description": "Name for the extracted method"
+    },
+    "visibility": {
+      "type": "string",
+      "enum": ["private", "protected", "public", "internal"],
+      "description": "Visibility modifier for the method",
+      "default": "private"
+    }
+  },
+  "required": ["projectName", "filePath", "startLine", "endLine", "methodName"]
+}
+```
+
+**Output**:
+```json
+{
+  "success": true,
+  "filesChanged": ["src/Service.kt"],
+  "changesCount": 1
+}
+```
+
 ## Implementation Plan
 
 ### 1. Core Infrastructure
@@ -159,7 +215,7 @@ Add to existing settings page:
 Available Tools:
   [x] intellij_health_check
   [x] intellij_rename_symbol
-  [ ] intellij_extract_method (coming soon)
+  [x] intellij_extract_method
 ```
 
 ### Cursor Configuration
