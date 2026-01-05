@@ -8,20 +8,26 @@ set -e
 # Find the IntelliJ plugin directory
 PLUGIN_DIR=""
 
-# Check common plugin locations
-PLUGIN_LOCATIONS=(
-    "$HOME/Library/Application Support/JetBrains/IntelliJIdea*/plugins/intellij-control-server"
-    "$HOME/.local/share/JetBrains/IntelliJIdea*/plugins/intellij-control-server"
-    "$HOME/.config/JetBrains/IntelliJIdea*/plugins/intellij-control-server"
+# Check common plugin base directories (without globbing first)
+JETBRAINS_DIRS=(
+    "$HOME/Library/Application Support/JetBrains"
+    "$HOME/.local/share/JetBrains"
+    "$HOME/.config/JetBrains"
 )
 
-for pattern in "${PLUGIN_LOCATIONS[@]}"; do
-    for dir in $pattern; do
-        if [ -d "$dir" ] && [ -f "$dir/lib/mcp-bridge.jar" ]; then
-            PLUGIN_DIR="$dir"
-            break 2
-        fi
-    done
+for base_dir in "${JETBRAINS_DIRS[@]}"; do
+    if [ -d "$base_dir" ]; then
+        # Now glob within the found directory
+        for idea_version in "$base_dir"/IntelliJIdea* "$base_dir"/IdeaIC*; do
+            if [ -d "$idea_version" ]; then
+                plugin_path="$idea_version/plugins/intellij-control-server"
+                if [ -d "$plugin_path" ] && [ -f "$plugin_path/lib/mcp-bridge.jar" ]; then
+                    PLUGIN_DIR="$plugin_path"
+                    break 2
+                fi
+            fi
+        done
+    fi
 done
 
 if [ -z "$PLUGIN_DIR" ]; then

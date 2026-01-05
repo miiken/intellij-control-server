@@ -32,3 +32,21 @@ tasks.test {
     useJUnitPlatform()
 }
 
+// Create a fat JAR with all dependencies
+tasks.register<Jar>("fatJar") {
+    archiveClassifier.set("all")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    
+    manifest {
+        attributes["Main-Class"] = "io.miiken.intellij.mcp.bridge.MainKt"
+    }
+    
+    from(configurations.runtimeClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
+    from(sourceSets.main.get().output)
+}
+
+// Make buildPlugin depend on fatJar
+tasks.named("jar") {
+    dependsOn("fatJar")
+}
+
