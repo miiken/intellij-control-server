@@ -19,6 +19,9 @@ repositories {
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     
+    // JSON-RPC 2.0 (for MCP server)
+    implementation("com.github.briandilley.jsonrpc4j:jsonrpc4j:1.6")
+    
     // JAX-RS API (Java standard for REST)
     implementation("jakarta.ws.rs:jakarta.ws.rs-api:3.1.0")
     
