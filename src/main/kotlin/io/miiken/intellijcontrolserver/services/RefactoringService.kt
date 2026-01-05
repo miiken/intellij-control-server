@@ -132,13 +132,13 @@ object RefactoringService {
         newName: String,
         searchInStrings: Boolean
     ): RefactoringResult {
-        val processor = RenameProcessor(project, element, newName, false, searchInStrings)
-        
-        val changedFiles = ReadAction.compute<Set<String>, RuntimeException> {
-            val usages = processor.findUsages()
-            usages.mapNotNull { usage ->
+        val (processor, changedFiles) = ReadAction.compute<Pair<RenameProcessor, Set<String>>, RuntimeException> {
+            val proc = RenameProcessor(project, element, newName, false, searchInStrings)
+            val usages = proc.findUsages()
+            val files = usages.mapNotNull { usage ->
                 usage.file?.virtualFile?.path
             }.toSet()
+            Pair(proc, files)
         }
         
         ApplicationManager.getApplication().invokeAndWait {

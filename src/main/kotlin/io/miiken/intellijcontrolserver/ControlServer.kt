@@ -2,11 +2,11 @@ package io.miiken.intellijcontrolserver
 
 import com.intellij.openapi.Disposable
 import com.intellij.openapi.diagnostic.Logger
-import com.intellij.openapi.project.ProjectManager
 import com.sun.net.httpserver.HttpServer
 import io.miiken.intellijcontrolserver.config.ServerConfig
 import io.miiken.intellijcontrolserver.server.controllers.ApiDocsController
 import io.miiken.intellijcontrolserver.server.controllers.HealthController
+import io.miiken.intellijcontrolserver.server.controllers.McpController
 import io.miiken.intellijcontrolserver.server.controllers.RefactoringController
 import io.miiken.intellijcontrolserver.server.openapi.OpenApiGenerator
 import io.miiken.intellijcontrolserver.server.routing.ControllerDispatcher
@@ -93,22 +93,8 @@ class ControlServer(private val config: ServerConfig) : Disposable {
         val registry = ControllerRegistry()
         
         registry.registerController(HealthController(startTime))
-        
         registry.registerController(RefactoringController())
-        
-        val openProjects = ProjectManager.getInstance().openProjects
-        if (openProjects.isNotEmpty()) {
-            logger.info("✓ Registered RefactoringController (dynamic project resolution)")
-            logger.info("  Available projects: ${openProjects.joinToString(", ") { it.name }}")
-            openProjects.forEach { project ->
-                logger.info("  - /${project.name}/refactor/rename")
-                logger.info("  - /${project.name}/refactor/extract-method")
-            }
-        } else {
-            logger.warn("⚠ No open projects yet")
-            logger.info("  RefactoringController will resolve projects dynamically at runtime")
-            logger.info("  Endpoints: /{projectName}/refactor/rename and /{projectName}/refactor/extract-method")
-        }
+        registry.registerController(McpController())
         
         val openApiGenerator = OpenApiGenerator(registry)
         registry.registerController(ApiDocsController(openApiGenerator))

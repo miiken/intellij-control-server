@@ -5,6 +5,13 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(description = "Request to extract a code block into a new method")
 data class ExtractMethodRequest(
     @Schema(
+        description = "Name of the IntelliJ project (required for MCP, provided via URL path for HTTP API)",
+        example = "my-project",
+        required = false
+    )
+    val projectName: String? = null,
+    
+    @Schema(
         description = "Path to the file containing the code to extract",
         example = "src/main/kotlin/com/example/Service.kt",
         required = true

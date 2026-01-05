@@ -32,7 +32,13 @@ data class ServerConfig(
      * Enable CORS headers (not recommended for production)
      * Default: false
      */
-    val enableCors: Boolean = false
+    val enableCors: Boolean = false,
+    
+    /**
+     * Enable MCP (Model Context Protocol) server on stdio
+     * Default: true
+     */
+    val enableMcp: Boolean = true
 ) {
     companion object {
         /**
