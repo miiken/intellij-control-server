@@ -26,7 +26,9 @@ class ControlServerConfigurable : Configurable {
                 component.getAutoStart() != currentConfig.autoStart ||
                 component.getLogLevel() != currentConfig.logLevel ||
                 component.getEnableCors() != currentConfig.enableCors ||
-                component.getEnableMcp() != currentConfig.enableMcp
+                component.getEnableMcp() != currentConfig.enableMcp ||
+                component.getRenameStringsInMethodBody() != currentConfig.renameStringsInMethodBody ||
+                component.getRenameInAnnotations() != currentConfig.renameInAnnotations
     }
     
     override fun apply() {
@@ -38,7 +40,9 @@ class ControlServerConfigurable : Configurable {
             autoStart = component.getAutoStart(),
             logLevel = component.getLogLevel(),
             enableCors = component.getEnableCors(),
-            enableMcp = component.getEnableMcp()
+            enableMcp = component.getEnableMcp(),
+            renameStringsInMethodBody = component.getRenameStringsInMethodBody(),
+            renameInAnnotations = component.getRenameInAnnotations()
         )
         
         val errors = newConfig.validate()
@@ -63,6 +67,16 @@ class ControlServerConfigurable : Configurable {
             if (restart == Messages.YES) {
                 service.updateConfig(newConfig)
             }
+        } else if (newConfig.autoStart) {
+            val start = Messages.showYesNoDialog(
+                "Auto-start is enabled.\nStart the server now?",
+                "Start Server?",
+                Messages.getQuestionIcon()
+            )
+            
+            if (start == Messages.YES) {
+                service.updateConfig(newConfig)
+            }
         }
     }
     
@@ -76,6 +90,8 @@ class ControlServerConfigurable : Configurable {
         component.setLogLevel(config.logLevel)
         component.setEnableCors(config.enableCors)
         component.setEnableMcp(config.enableMcp)
+        component.setRenameStringsInMethodBody(config.renameStringsInMethodBody)
+        component.setRenameInAnnotations(config.renameInAnnotations)
     }
     
     override fun disposeUIResources() {

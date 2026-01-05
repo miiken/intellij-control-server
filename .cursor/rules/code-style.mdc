@@ -65,6 +65,52 @@ fun load(path: String): ServerConfig {
 
 ## Kotlin-Specific Guidelines
 
+### Imports vs Fully Qualified Names
+
+**Always use imports instead of fully qualified class names in code.**
+
+```kotlin
+// ❌ Bad - Fully qualified names
+fun createServer(project: com.intellij.openapi.project.Project) {
+    val manager = com.intellij.psi.PsiManager.getInstance(project)
+    com.intellij.openapi.application.ApplicationManager.getApplication().invokeLater {
+        // ...
+    }
+}
+
+// ✅ Good - Use imports
+import com.intellij.openapi.application.ApplicationManager
+import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiManager
+
+fun createServer(project: Project) {
+    val manager = PsiManager.getInstance(project)
+    ApplicationManager.getApplication().invokeLater {
+        // ...
+    }
+}
+```
+
+**Why?**
+- **Readability**: Shorter, cleaner code
+- **Maintainability**: Easier to refactor and update
+- **IDE Support**: Better auto-completion and navigation
+- **Convention**: Standard Kotlin/Java practice
+
+**When fully qualified names are acceptable:**
+- Resolving name conflicts between imports
+- One-time usage in very specific contexts
+- Generated code or documentation examples
+
+```kotlin
+// ✅ Acceptable - Resolving conflict
+import java.util.Date
+import java.sql.Date as SqlDate
+
+fun processDate(date: Date) { }
+fun processSqlDate(date: SqlDate) { }
+```
+
 ### Naming Conventions
 
 #### Classes and Objects
@@ -163,6 +209,97 @@ if (isServerReady()) {
     // ...
 }
 ```
+
+### Immutability
+
+**Prefer immutable variables and collections whenever possible.**
+
+#### Prefer `val` over `var`
+
+```kotlin
+// ❌ Bad - Mutable variable when not needed
+var serverPort = 8765
+var isRunning = false
+
+// ✅ Good - Immutable by default
+val serverPort = 8765
+val isRunning = server != null
+```
+
+#### Prefer Immutable Collections
+
+```kotlin
+// ❌ Bad - Mutable collections
+val errors = mutableListOf<String>()
+errors.add("Port out of range")
+errors.add("Host cannot be blank")
+
+val config = mutableMapOf<String, Any>()
+config["port"] = 8765
+config["host"] = "127.0.0.1"
+
+// ✅ Good - Build immutable collections functionally
+val errors = buildList {
+    if (port < MIN_PORT || port > MAX_PORT) add("Port out of range")
+    if (host.isBlank()) add("Host cannot be blank")
+}
+
+val config = mapOf(
+    "port" to 8765,
+    "host" to "127.0.0.1"
+)
+```
+
+#### Use Functional Patterns
+
+```kotlin
+// ❌ Bad - Mutable accumulator
+val validItems = mutableListOf<Item>()
+for (item in items) {
+    if (item.isValid()) {
+        validItems.add(item)
+    }
+}
+
+// ✅ Good - Functional filter
+val validItems = items.filter { it.isValid() }
+
+// ❌ Bad - Mutable map building
+val nameToId = mutableMapOf<String, Int>()
+for (user in users) {
+    nameToId[user.name] = user.id
+}
+
+// ✅ Good - Functional associateBy
+val nameToId = users.associateBy({ it.name }, { it.id })
+```
+
+#### When Mutation Is Necessary
+
+Sometimes mutation is necessary for performance or clarity. In these cases, keep the mutable scope minimal:
+
+```kotlin
+// ✅ Good - Limited scope for mutable collection
+fun collectStringReplacements(element: PsiElement, oldName: String): List<Pair<Int, Int>> {
+    val replacements = mutableListOf<Pair<Int, Int>>()
+    
+    element.accept(object : PsiRecursiveElementVisitor() {
+        override fun visitElement(element: PsiElement) {
+            super.visitElement(element)
+            if (shouldProcess(element)) {
+                replacements.add(calculateOffset(element, oldName))
+            }
+        }
+    })
+    
+    return replacements
+}
+```
+
+The key is:
+- Mutable variable is private to the function
+- Returned as immutable `List`
+- Clear single purpose
 
 ### Small, Focused Functions
 

@@ -17,6 +17,8 @@ class ControlServerSettingsComponent {
     private val logLevelComboBox = JComboBox(arrayOf("DEBUG", "INFO", "WARN", "ERROR"))
     private val enableCorsCheckbox = JBCheckBox("Enable CORS (allow cross-origin requests)")
     private val enableMcpCheckbox = JBCheckBox("Enable MCP (Model Context Protocol) server on stdio")
+    private val renameStringsInMethodBodyCheckbox = JBCheckBox("When renaming a method, also update string literals in method body")
+    private val renameInAnnotationsCheckbox = JBCheckBox("When renaming a method, also update annotation properties")
     
     init {
         portField.columns = 10
@@ -34,6 +36,12 @@ class ControlServerSettingsComponent {
             .addTooltip("Allow requests from any origin. Enable only if you need to access from browser/other domains")
             .addComponent(enableMcpCheckbox, 1)
             .addTooltip("Enable MCP server for AI tool integration (e.g., Cursor). Uses stdio transport for JSON-RPC 2.0 communication")
+            .addSeparator(5)
+            .addComponent(JBLabel("Refactoring Behavior:"), 1)
+            .addComponent(renameStringsInMethodBodyCheckbox, 1)
+            .addTooltip("Updates string literals like logger.info(\"methodName\") and test names")
+            .addComponent(renameInAnnotationsCheckbox, 1)
+            .addTooltip("Updates annotation properties like @Timed(\"methodName\")")
             .addComponentFillVertically(JPanel(), 0)
             .panel
         
@@ -76,6 +84,18 @@ class ControlServerSettingsComponent {
     
     fun setEnableMcp(enableMcp: Boolean) {
         enableMcpCheckbox.isSelected = enableMcp
+    }
+    
+    fun getRenameStringsInMethodBody(): Boolean = renameStringsInMethodBodyCheckbox.isSelected
+    
+    fun setRenameStringsInMethodBody(value: Boolean) {
+        renameStringsInMethodBodyCheckbox.isSelected = value
+    }
+    
+    fun getRenameInAnnotations(): Boolean = renameInAnnotationsCheckbox.isSelected
+    
+    fun setRenameInAnnotations(value: Boolean) {
+        renameInAnnotationsCheckbox.isSelected = value
     }
 }
 

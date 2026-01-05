@@ -4,8 +4,13 @@ import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
 import com.intellij.openapi.project.Project
+import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiModifierListOwner
+import com.intellij.psi.PsiNamedElement
+import com.intellij.psi.PsiRecursiveElementVisitor
 import com.intellij.refactoring.rename.RenameProcessor
+import io.miiken.intellijcontrolserver.config.ConfigLoader
 import io.miiken.intellijcontrolserver.models.*
 import io.miiken.intellijcontrolserver.util.PsiUtils
 
@@ -55,10 +60,7 @@ object RefactoringService {
                 }
             }
             
-            val isMethod = PsiUtils.isMethod(namedElement)
-            val shouldSearchInStrings = request.searchInStrings ?: isMethod
-            
-            return executeRename(project, namedElement, request.newName, shouldSearchInStrings)
+            return executeRename(project, namedElement, request.newName)
             
         } catch (e: Exception) {
             return RefactoringResult(
@@ -129,11 +131,14 @@ object RefactoringService {
     private fun executeRename(
         project: Project,
         element: PsiElement,
-        newName: String,
-        searchInStrings: Boolean
+        newName: String
     ): RefactoringResult {
+        val oldName = ReadAction.compute<String?, RuntimeException> {
+            (element as? PsiNamedElement)?.name
+        } ?: throw IllegalArgumentException("Element has no name")
+        
         val (processor, changedFiles) = ReadAction.compute<Pair<RenameProcessor, Set<String>>, RuntimeException> {
-            val proc = RenameProcessor(project, element, newName, false, searchInStrings)
+            val proc = RenameProcessor(project, element, newName, false, false)
             val usages = proc.findUsages()
             val files = usages.mapNotNull { usage ->
                 usage.file?.virtualFile?.path
@@ -145,11 +150,154 @@ object RefactoringService {
             processor.run()
         }
         
+        val config = ConfigLoader.load()
+        if (element is PsiNamedElement && PsiUtils.isMethod(element) && 
+            (config.renameStringsInMethodBody || config.renameInAnnotations)) {
+            val additionalChanges = updateStringsInMethodBody(
+                project, 
+                element, 
+                oldName, 
+                newName, 
+                updateMethodBody = config.renameStringsInMethodBody,
+                updateAnnotations = config.renameInAnnotations
+            )
+            val allChangedFiles = changedFiles + additionalChanges
+            
+            return RefactoringResult(
+                success = true,
+                filesChanged = allChangedFiles.toList(),
+                changesCount = allChangedFiles.size
+            )
+        }
+        
         return RefactoringResult(
             success = true,
             filesChanged = changedFiles.toList(),
             changesCount = changedFiles.size
         )
+    }
+    
+    /**
+     * Updates all occurrences of the old method name in string literals within:
+     * 1. Annotations attached to the method (e.g., @Timed("methodName")) - if updateAnnotations is true
+     * 2. The method body (e.g., logger.info("Calling methodName...")) - if updateMethodBody is true
+     * 3. Test method names (e.g., "GIVEN ... WHEN methodName THEN ...") - if updateMethodBody is true
+     */
+    private fun updateStringsInMethodBody(
+        project: Project,
+        methodElement: PsiElement,
+        oldName: String,
+        newName: String,
+        updateMethodBody: Boolean = true,
+        updateAnnotations: Boolean = true
+    ): Set<String> {
+        val psiFile = methodElement.containingFile
+        val document = PsiDocumentManager.getInstance(project).getDocument(psiFile)
+            ?: return emptySet()
+        
+        val replacements = ReadAction.compute<List<Pair<Int, Int>>, RuntimeException> {
+            collectStringReplacements(methodElement, oldName, updateMethodBody, updateAnnotations)
+        }
+        
+        if (replacements.isEmpty()) {
+            return emptySet()
+        }
+        
+        WriteCommandAction.runWriteCommandAction(project) {
+            replacements.sortedByDescending { it.first }.forEach { (offset, length) ->
+                document.replaceString(offset, offset + length, newName)
+            }
+            PsiDocumentManager.getInstance(project).commitDocument(document)
+        }
+        
+        return psiFile.virtualFile?.path?.let { setOf(it) } ?: emptySet()
+    }
+    
+    private fun collectStringReplacements(
+        methodElement: PsiElement,
+        oldName: String,
+        updateMethodBody: Boolean,
+        updateAnnotations: Boolean
+    ): List<Pair<Int, Int>> {
+        val replacements = mutableListOf<Pair<Int, Int>>()
+        
+        fun processElement(element: PsiElement) {
+            val elementType = element.node?.elementType?.toString() ?: ""
+            if (elementType.contains("STRING") || 
+                elementType.contains("LITERAL_STRING_TEMPLATE_ENTRY") ||
+                element.javaClass.simpleName.contains("StringLiteral")) {
+                val text = element.text
+                val matches = findWordBoundaryMatches(text, oldName)
+                
+                matches.forEach { index ->
+                    val absoluteOffset = element.textRange.startOffset + index
+                    replacements.add(Pair(absoluteOffset, oldName.length))
+                }
+            }
+        }
+        
+        val visitor = object : PsiRecursiveElementVisitor() {
+            override fun visitElement(element: PsiElement) {
+                super.visitElement(element)
+                processElement(element)
+            }
+        }
+        
+        if (updateAnnotations) {
+            if (methodElement is PsiModifierListOwner) {
+                methodElement.modifierList?.annotations?.forEach { it.accept(visitor) }
+            }
+            
+            try {
+                val ktAnnotationsMethod = methodElement.javaClass.getMethod("getAnnotationEntries")
+                val annotations = ktAnnotationsMethod.invoke(methodElement) as? List<*>
+                annotations?.forEach { (it as? PsiElement)?.accept(visitor) }
+            } catch (e: Exception) {
+            }
+        }
+        
+        if (updateMethodBody) {
+            methodElement.accept(visitor)
+        }
+        
+        return replacements
+    }
+    
+    /**
+     * Finds all indices in the text where the search term appears as a whole word/identifier.
+     * A match is valid if it's not part of a larger word or identifier.
+     * 
+     * Examples:
+     * - "start" in "method started" -> match at index 7 (word boundary)
+     * - "start" in "Metrics.Timed.start" -> match at index 14 (after period)
+     * - "start" in "starting" -> no match (part of larger word)
+     * 
+     * @param text The text to search in
+     * @param searchTerm The term to search for
+     * @return List of indices where valid matches occur
+     */
+    internal fun findWordBoundaryMatches(text: String, searchTerm: String): List<Int> {
+        val matches = mutableListOf<Int>()
+        var startIndex = 0
+        
+        while (true) {
+            val index = text.indexOf(searchTerm, startIndex)
+            if (index == -1) break
+            
+            val charBefore = if (index > 0) text[index - 1] else null
+            val charAfter = if (index + searchTerm.length < text.length) text[index + searchTerm.length] else null
+            
+            val isValidBefore = charBefore == null || (!charBefore.isLetterOrDigit() && charBefore != '_')
+            val isValidAfter = charAfter == null || (!charAfter.isLetterOrDigit() && charAfter != '_')
+            
+            if (isValidBefore && isValidAfter) {
+                matches.add(index)
+            }
+            
+            startIndex = index + searchTerm.length
+        }
+        
+        return matches
     }
 }
 
