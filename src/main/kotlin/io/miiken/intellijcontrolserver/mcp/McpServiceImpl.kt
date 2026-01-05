@@ -6,7 +6,8 @@ import com.intellij.openapi.diagnostic.Logger
 /**
  * Implementation of MCP Service
  * 
- * Handles MCP protocol methods and delegates to tool registry
+ * Handles MCP protocol methods and delegates to tool registry.
+ * Uses Gson for type-safe deserialization of requests.
  */
 class McpServiceImpl : McpService {
     private val logger = Logger.getInstance(McpServiceImpl::class.java)
@@ -27,7 +28,7 @@ class McpServiceImpl : McpService {
     }
     
     override fun listTools(): ToolsListResponse {
-        logger.info("MCP tools/list called")
+        logger.info("MCP tools/list called (${ToolRegistry.getToolCount()} tools available)")
         
         val tools = ToolRegistry.getAllTools().map { tool ->
             ToolDefinition(
@@ -46,7 +47,7 @@ class McpServiceImpl : McpService {
         val tool = ToolRegistry.getTool(name)
             ?: throw IllegalArgumentException("Unknown tool: $name")
         
-        val result = tool.execute(arguments ?: emptyMap())
+        val result = executeTypedTool(tool, arguments ?: emptyMap())
         
         return ToolCallResponse(
             content = listOf(
@@ -57,5 +58,12 @@ class McpServiceImpl : McpService {
             )
         )
     }
+    
+    private fun <IN : Any, OUT : Any> executeTypedTool(tool: Tool<IN, OUT>, arguments: Map<String, Any>): OUT {
+        val argumentsJson = gson.toJson(arguments)
+        val typedRequest = gson.fromJson(argumentsJson, tool.inputClass.java)
+        return tool.execute(typedRequest)
+    }
+    
 }
 

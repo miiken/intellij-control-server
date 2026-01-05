@@ -16,6 +16,7 @@ class ControlServerSettingsComponent {
     private val autoStartCheckbox = JBCheckBox("Auto-start server when IntelliJ opens")
     private val logLevelComboBox = JComboBox(arrayOf("DEBUG", "INFO", "WARN", "ERROR"))
     private val enableCorsCheckbox = JBCheckBox("Enable CORS (allow cross-origin requests)")
+    private val enableMcpCheckbox = JBCheckBox("Enable MCP (Model Context Protocol) server on stdio")
     
     init {
         portField.columns = 10
@@ -31,6 +32,8 @@ class ControlServerSettingsComponent {
             .addTooltip("Logging verbosity: DEBUG (verbose), INFO (normal), WARN (warnings only), ERROR (errors only)")
             .addComponent(enableCorsCheckbox, 1)
             .addTooltip("Allow requests from any origin. Enable only if you need to access from browser/other domains")
+            .addComponent(enableMcpCheckbox, 1)
+            .addTooltip("Enable MCP server for AI tool integration (e.g., Cursor). Uses stdio transport for JSON-RPC 2.0 communication")
             .addComponentFillVertically(JPanel(), 0)
             .panel
         
@@ -67,6 +70,12 @@ class ControlServerSettingsComponent {
     
     fun setEnableCors(enableCors: Boolean) {
         enableCorsCheckbox.isSelected = enableCors
+    }
+    
+    fun getEnableMcp(): Boolean = enableMcpCheckbox.isSelected
+    
+    fun setEnableMcp(enableMcp: Boolean) {
+        enableMcpCheckbox.isSelected = enableMcp
     }
 }
 

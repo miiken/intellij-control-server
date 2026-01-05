@@ -5,6 +5,13 @@ import io.swagger.v3.oas.annotations.media.Schema
 @Schema(description = "Request to rename a symbol (class, method, variable, parameter)")
 data class RenameRequest(
     @Schema(
+        description = "Name of the IntelliJ project (required for MCP, provided via URL path for HTTP API)",
+        example = "my-project",
+        required = false
+    )
+    val projectName: String? = null,
+    
+    @Schema(
         description = "Path to the file containing the element to rename (relative to project root)",
         example = "src/main/kotlin/com/example/Service.kt",
         required = true

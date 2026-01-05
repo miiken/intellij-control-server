@@ -25,7 +25,8 @@ class ControlServerConfigurable : Configurable {
                 component.getHost() != currentConfig.host ||
                 component.getAutoStart() != currentConfig.autoStart ||
                 component.getLogLevel() != currentConfig.logLevel ||
-                component.getEnableCors() != currentConfig.enableCors
+                component.getEnableCors() != currentConfig.enableCors ||
+                component.getEnableMcp() != currentConfig.enableMcp
     }
     
     override fun apply() {
@@ -36,7 +37,8 @@ class ControlServerConfigurable : Configurable {
             host = component.getHost(),
             autoStart = component.getAutoStart(),
             logLevel = component.getLogLevel(),
-            enableCors = component.getEnableCors()
+            enableCors = component.getEnableCors(),
+            enableMcp = component.getEnableMcp()
         )
         
         val errors = newConfig.validate()
@@ -73,6 +75,7 @@ class ControlServerConfigurable : Configurable {
         component.setAutoStart(config.autoStart)
         component.setLogLevel(config.logLevel)
         component.setEnableCors(config.enableCors)
+        component.setEnableMcp(config.enableMcp)
     }
     
     override fun disposeUIResources() {
