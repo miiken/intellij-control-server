@@ -5,15 +5,17 @@ import com.intellij.openapi.components.Service
 import com.intellij.openapi.diagnostic.Logger
 import io.miiken.intellijcontrolserver.config.ConfigLoader
 import io.miiken.intellijcontrolserver.config.ServerConfig
+import io.miiken.intellijcontrolserver.mcp.McpStdioServer
 
 /**
  * Application-level service for Control Server
- * This service is a singleton that manages the HTTP server lifecycle
+ * This service is a singleton that manages the HTTP and MCP server lifecycle
  */
 @Service
 class ControlServerService : Disposable {
     private val logger = Logger.getInstance(ControlServerService::class.java)
     private var controlServer: ControlServer? = null
+    private var mcpServer: McpStdioServer? = null
     private var config: ServerConfig = ServerConfig.DEFAULT
     
     init {
@@ -21,7 +23,7 @@ class ControlServerService : Disposable {
     }
     
     /**
-     * Start the control server
+     * Start the control server and MCP server
      */
     fun startServer() {
         if (controlServer?.isRunning() == true) {
@@ -31,9 +33,9 @@ class ControlServerService : Disposable {
         
         try {
             loadConfiguration()
-            createAndStartServer()
+            createAndStartServers()
         } catch (e: Exception) {
-            logger.error("Failed to start Control Server", e)
+            logger.error("Failed to start servers", e)
         }
     }
     
@@ -42,21 +44,31 @@ class ControlServerService : Disposable {
         logger.info("Loaded configuration: port=${config.port}, host=${config.host}")
     }
     
-    private fun createAndStartServer() {
+    private fun createAndStartServers() {
         controlServer = ControlServer(config).apply {
             start()
+        }
+        
+        if (config.enableMcp) {
+            mcpServer = McpStdioServer().apply {
+                start()
+            }
+            logger.info("MCP server started")
         }
     }
     
     /**
-     * Stop the control server
+     * Stop the control server and MCP server
      */
     fun stopServer() {
         try {
             controlServer?.stop()
             controlServer = null
+            
+            mcpServer?.stop()
+            mcpServer = null
         } catch (e: Exception) {
-            logger.error("Error stopping Control Server", e)
+            logger.error("Error stopping servers", e)
         }
     }
     
