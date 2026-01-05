@@ -529,6 +529,159 @@ fun processRequest(request: TaskRequest) {
 
 But **never** for API endpoints that you control.
 
+### Extensible Tool Architecture
+
+**Use the plugin pattern for adding new tools/features.** Avoid hard-coded registrations in `when` statements.
+
+#### ❌ Bad (Hard-coded registration)
+```kotlin
+class McpServiceImpl : McpService {
+    override fun callTool(name: String, arguments: Map<String, Any>?): ToolCallResponse {
+        val result = when (name) {
+            "intellij_health_check" -> executeHealthCheck()
+            "intellij_rename_symbol" -> executeRename(arguments ?: emptyMap())
+            "intellij_extract_method" -> executeExtractMethod(arguments ?: emptyMap())
+            // Every new tool requires modifying this when clause
+            else -> throw IllegalArgumentException("Unknown tool: $name")
+        }
+        // ...
+    }
+    
+    private fun executeHealthCheck(): Any { /* ... */ }
+    private fun executeRename(arguments: Map<String, Any>): Any { /* ... */ }
+    private fun executeExtractMethod(arguments: Map<String, Any>): Any { /* ... */ }
+}
+```
+
+#### ✅ Good (Plugin pattern)
+```kotlin
+// 1. Define tool interface
+interface Tool {
+    val name: String
+    val description: String
+    val inputSchema: Map<String, Any>
+    fun execute(arguments: Map<String, Any>): Any
+}
+
+// 2. Create registry for auto-discovery
+object ToolRegistry {
+    private val tools: Map<String, Tool>
+    
+    init {
+        tools = discoverTools()
+    }
+    
+    fun getAllTools(): List<Tool> = tools.values.toList()
+    fun getTool(name: String): Tool? = tools[name]
+    
+    private fun discoverTools(): Map<String, Tool> {
+        return listOf(
+            HealthCheckTool(),
+            RenameSymbolTool(),
+            ExtractMethodTool()
+        ).associateBy { it.name }
+    }
+}
+
+// 3. Implement tools as separate classes
+class HealthCheckTool : Tool {
+    override val name = "intellij_health_check"
+    override val description = "Check if the IntelliJ Control Server is running"
+    override val inputSchema = mapOf(/* ... */)
+    
+    override fun execute(arguments: Map<String, Any>): Any {
+        // Implementation
+    }
+}
+
+class RenameSymbolTool : Tool {
+    override val name = "intellij_rename_symbol"
+    override val description = "Rename a symbol in the codebase"
+    override val inputSchema = mapOf(/* ... */)
+    
+    override fun execute(arguments: Map<String, Any>): Any {
+        // Implementation
+    }
+}
+
+// 4. Use registry in service
+class McpServiceImpl : McpService {
+    override fun callTool(name: String, arguments: Map<String, Any>?): ToolCallResponse {
+        val tool = ToolRegistry.getTool(name)
+            ?: throw IllegalArgumentException("Unknown tool: $name")
+        
+        val result = tool.execute(arguments ?: emptyMap())
+        // ...
+    }
+}
+```
+
+**Why?**
+
+1. **Open/Closed Principle**: Open for extension, closed for modification
+   - Adding a new tool doesn't require modifying `McpServiceImpl`
+   - Just create a new class implementing `Tool`
+
+2. **Single Responsibility**: Each tool is self-contained
+   - Tool definition, schema, and execution in one place
+   - Easy to understand and test individually
+
+3. **Discoverability**: All tools in one package
+   ```
+   src/main/kotlin/io/miiken/intellijcontrolserver/mcp/tools/
+   ├── HealthCheckTool.kt
+   ├── RenameSymbolTool.kt
+   ├── ExtractMethodTool.kt
+   └── NewFeatureTool.kt  ← Add new tool here
+   ```
+
+4. **Testability**: Each tool can be tested in isolation
+   ```kotlin
+   @Test
+   fun `HealthCheckTool should return ok status`() {
+       val tool = HealthCheckTool()
+       val result = tool.execute(emptyMap())
+       // ...
+   }
+   ```
+
+5. **Maintainability**: Changes to one tool don't affect others
+   - No risk of breaking other tools when modifying one
+   - Clear ownership and boundaries
+
+**Adding a new tool:**
+```kotlin
+// 1. Create new file: tools/MyNewTool.kt
+class MyNewTool : Tool {
+    override val name = "intellij_my_new_feature"
+    override val description = "Does something awesome"
+    override val inputSchema = mapOf(/* ... */)
+    
+    override fun execute(arguments: Map<String, Any>): Any {
+        // Implementation
+    }
+}
+
+// 2. Register in ToolRegistry.discoverTools()
+private fun discoverTools(): Map<String, Tool> {
+    return listOf(
+        HealthCheckTool(),
+        RenameSymbolTool(),
+        ExtractMethodTool(),
+        MyNewTool()  // ← Add here
+    ).associateBy { it.name }
+}
+
+// 3. That's it! No changes to McpServiceImpl needed
+```
+
+This pattern applies to:
+- MCP tools
+- HTTP route handlers  
+- Validators
+- Converters
+- Any pluggable component
+
 ## Code Organization
 
 ### File Structure
