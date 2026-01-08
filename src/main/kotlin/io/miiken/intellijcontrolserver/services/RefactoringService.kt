@@ -3,6 +3,7 @@ package io.miiken.intellijcontrolserver.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
@@ -145,18 +146,19 @@ object RefactoringService {
             (element as? PsiNamedElement)?.name
         } ?: throw IllegalArgumentException("Element has no name")
         
-        val (processor, changedFiles) = ReadAction.compute<Pair<RenameProcessor, Set<String>>, RuntimeException> {
-            val proc = RenameProcessor(project, element, newName, false, false)
-            val usages = proc.findUsages()
-            val files = usages.mapNotNull { usage ->
-                usage.file?.virtualFile?.path
-            }.toSet()
-            Pair(proc, files)
-        }
+        val changedFiles = mutableSetOf<String>()
         
         ApplicationManager.getApplication().invokeAndWait {
+            val processor = RenameProcessor(project, element, newName, false, false)
+            val usages = processor.findUsages()
+            usages.mapNotNullTo(changedFiles) { usage ->
+                usage.file?.virtualFile?.path
+            }
             processor.run()
         }
+        
+        FileDocumentManager.getInstance().saveAllDocuments()
+        
         
         val config = ConfigLoader.load()
         if (element is PsiNamedElement && PsiUtils.isMethod(element) && 
@@ -216,6 +218,7 @@ object RefactoringService {
                 document.replaceString(offset, offset + length, newName)
             }
             PsiDocumentManager.getInstance(project).commitDocument(document)
+            FileDocumentManager.getInstance().saveDocument(document)
         }
         
         return psiFile.virtualFile?.path?.let { setOf(it) } ?: emptySet()
@@ -317,6 +320,7 @@ object RefactoringService {
                     document.insertString(fileEndOffset, newMethod)
                     
                     PsiDocumentManager.getInstance(project).commitDocument(document)
+                    FileDocumentManager.getInstance().saveDocument(document)
                     
                     psiFile.virtualFile?.path?.let { changedFiles.add(it) }
                 }
