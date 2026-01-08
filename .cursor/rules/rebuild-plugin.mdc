@@ -1,0 +1,43 @@
+# Rebuild and Install Plugin
+
+To rebuild and install the IntelliJ Control Server plugin:
+
+```bash
+cd ~/IdeaProjects/intellij-control-server && \
+echo "🔨 Building plugin..." && \
+./gradlew clean buildPlugin -x test 2>&1 | tail -8 && \
+echo "" && \
+PLUGIN_ZIP="build/distributions/intellij-control-server-1.0.0.zip" && \
+JETBRAINS_DIR=~/Library/Application\ Support/JetBrains && \
+echo "🔍 Scanning for JetBrains IDEs..." && \
+IDES=($(ls -1 "$JETBRAINS_DIR" | grep -E "^(IntelliJIdea|WebStorm|PhpStorm|PyCharm|RubyMine|GoLand|CLion|DataGrip|Rider)" | sort -V)) && \
+if [ ${#IDES[@]} -eq 0 ]; then echo "❌ No compatible IDEs found"; exit 1; fi && \
+echo "📍 Found ${#IDES[@]} IDE(s):" && \
+for ide in "${IDES[@]}"; do echo "   - $ide"; done && \
+echo "" && \
+for ide in "${IDES[@]}"; do \
+  PLUGIN_DIR="$JETBRAINS_DIR/$ide/plugins/intellij-control-server" && \
+  rm -rf "$PLUGIN_DIR" && \
+  unzip -q "$PLUGIN_ZIP" -d "$JETBRAINS_DIR/$ide/plugins/" && \
+  echo "✅ Installed to $ide"; \
+done && \
+echo "" && \
+echo "⚠️  Restart your IDE(s) to use the updated plugin"
+```
+
+## IDE Compatibility
+
+The plugin installs to **all** compatible JetBrains IDEs found:
+- ✅ **IntelliJ IDEA** (Community/Ultimate) - Full support
+- ✅ **WebStorm** - Works for JavaScript/TypeScript refactoring
+- ✅ **PhpStorm, PyCharm, GoLand, RubyMine** - Language-specific refactoring
+- ⚠️ **Note**: Some Java-specific features may have limitations in non-Java IDEs
+
+If you want to install to a **specific IDE only**, modify the grep pattern:
+```bash
+# Install to IntelliJ only:
+IDES=($(ls -1 "$JETBRAINS_DIR" | grep "^IntelliJIdea" | sort -V))
+
+# Install to latest version only:
+IDES=($(ls -1 "$JETBRAINS_DIR" | grep "^IntelliJIdea" | sort -V | tail -1))
+```

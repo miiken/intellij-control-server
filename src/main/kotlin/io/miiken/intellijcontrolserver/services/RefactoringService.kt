@@ -3,9 +3,13 @@ package io.miiken.intellijcontrolserver.services
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.fileEditor.FileDocumentManager
+import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
+import com.intellij.openapi.util.TextRange
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.PsiFile
 import com.intellij.psi.PsiModifierListOwner
 import com.intellij.psi.PsiNamedElement
 import com.intellij.psi.PsiRecursiveElementVisitor
@@ -62,6 +66,8 @@ object RefactoringService {
             
             return executeRename(project, namedElement, request.newName)
             
+        } catch (e: ProcessCanceledException) {
+            throw e
         } catch (e: Exception) {
             return RefactoringResult(
                 success = false,
@@ -107,15 +113,18 @@ object RefactoringService {
                     )
                 }
                 is PsiUtils.TextRangeResult.Success -> {
-                    return RefactoringResult(
-                        success = false,
-                        error = RefactoringError(
-                            "NOT_IMPLEMENTED",
-                            "Extract method processor integration is not yet implemented. Text range calculation works (${rangeResult.startOffset}-${rangeResult.endOffset})."
-                        )
+                    return executeExtractMethod(
+                        project,
+                        psiFile,
+                        rangeResult.startOffset,
+                        rangeResult.endOffset,
+                        request.methodName,
+                        request.visibility
                     )
                 }
             }
+        } catch (e: ProcessCanceledException) {
+            throw e
         } catch (e: Exception) {
             return RefactoringResult(
                 success = false,
@@ -137,18 +146,19 @@ object RefactoringService {
             (element as? PsiNamedElement)?.name
         } ?: throw IllegalArgumentException("Element has no name")
         
-        val (processor, changedFiles) = ReadAction.compute<Pair<RenameProcessor, Set<String>>, RuntimeException> {
-            val proc = RenameProcessor(project, element, newName, false, false)
-            val usages = proc.findUsages()
-            val files = usages.mapNotNull { usage ->
-                usage.file?.virtualFile?.path
-            }.toSet()
-            Pair(proc, files)
-        }
+        val changedFiles = mutableSetOf<String>()
         
         ApplicationManager.getApplication().invokeAndWait {
+            val processor = RenameProcessor(project, element, newName, false, false)
+            val usages = processor.findUsages()
+            usages.mapNotNullTo(changedFiles) { usage ->
+                usage.file?.virtualFile?.path
+            }
             processor.run()
         }
+        
+        FileDocumentManager.getInstance().saveAllDocuments()
+        
         
         val config = ConfigLoader.load()
         if (element is PsiNamedElement && PsiUtils.isMethod(element) && 
@@ -208,6 +218,7 @@ object RefactoringService {
                 document.replaceString(offset, offset + length, newName)
             }
             PsiDocumentManager.getInstance(project).commitDocument(document)
+            FileDocumentManager.getInstance().saveDocument(document)
         }
         
         return psiFile.virtualFile?.path?.let { setOf(it) } ?: emptySet()
@@ -261,6 +272,77 @@ object RefactoringService {
         }
         
         return replacements
+    }
+    
+    private fun executeExtractMethod(
+        project: Project,
+        psiFile: PsiFile,
+        startOffset: Int,
+        endOffset: Int,
+        methodName: String,
+        visibility: String
+    ): RefactoringResult {
+        val changedFiles = mutableSetOf<String>()
+        
+        try {
+            // For now, perform a simple implementation that works with both Java and Kotlin
+            // This can be enhanced with language-specific processors later
+            ApplicationManager.getApplication().invokeAndWait {
+                WriteCommandAction.runWriteCommandAction(project) {
+                    val document = PsiDocumentManager.getInstance(project).getDocument(psiFile)
+                        ?: throw IllegalStateException("Cannot get document for file")
+                    
+                    // Extract the code text
+                    val extractedCode = document.getText(TextRange(startOffset, endOffset))
+                    
+                    // Generate the new method signature based on file type
+                    val isKotlin = psiFile.name.endsWith(".kt")
+                    val visibilityModifier = if (visibility == "private" || visibility == "internal") visibility else "private"
+                    
+                    val newMethod = if (isKotlin) {
+                        "\n\n    $visibilityModifier fun $methodName() {\n        $extractedCode\n    }"
+                    } else {
+                        "\n\n    $visibilityModifier void $methodName() {\n        $extractedCode\n    }"
+                    }
+                    
+                    // Replace the selected code with a method call
+                    val methodCall = if (isKotlin) {
+                        "$methodName()"
+                    } else {
+                        "$methodName();"
+                    }
+                    
+                    document.replaceString(startOffset, endOffset, methodCall)
+                    
+                    // Find a good place to insert the new method
+                    // For simplicity, insert at the end of the class/file
+                    val fileEndOffset = document.textLength
+                    document.insertString(fileEndOffset, newMethod)
+                    
+                    PsiDocumentManager.getInstance(project).commitDocument(document)
+                    FileDocumentManager.getInstance().saveDocument(document)
+                    
+                    psiFile.virtualFile?.path?.let { changedFiles.add(it) }
+                }
+            }
+            
+            return RefactoringResult(
+                success = true,
+                filesChanged = changedFiles.toList(),
+                changesCount = changedFiles.size
+            )
+        } catch (e: ProcessCanceledException) {
+            throw e
+        } catch (e: Exception) {
+            return RefactoringResult(
+                success = false,
+                error = RefactoringError(
+                    "EXTRACT_METHOD_FAILED",
+                    "Failed to extract method: ${e.message}",
+                    mapOf("exception" to (e::class.simpleName ?: "Unknown"))
+                )
+            )
+        }
     }
     
     /**

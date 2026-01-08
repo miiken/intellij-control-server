@@ -17,18 +17,18 @@ import kotlin.test.assertTrue
 
 class ResponseBuilderTest {
     
-    private val gson = Gson()
+    private val jsonParser = Gson()
     
     @Test
     fun `should send success response with data`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         val data = mapOf("key" to "value", "number" to 42)
         ResponseBuilder.sendSuccess(exchange, data)
         
         val response = outputStream.toString()
-        val json = gson.fromJson(response, Map::class.java)
+        val json = jsonParser.fromJson(response, Map::class.java)
         
         assertEquals("value", json["key"])
         assertEquals(42.0, json["number"])
@@ -37,12 +37,12 @@ class ResponseBuilderTest {
     @Test
     fun `should send error response with code and message`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         ResponseBuilder.sendError(exchange, "TEST_ERROR", "Test error message")
         
         val response = outputStream.toString()
-        val json = gson.fromJson(response, Map::class.java)
+        val json = jsonParser.fromJson(response, Map::class.java)
         
         assertEquals(false, json["success"])
         @Suppress("UNCHECKED_CAST")
@@ -54,13 +54,13 @@ class ResponseBuilderTest {
     @Test
     fun `should send error response with details`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         val details = mapOf("field" to "username", "constraint" to "min_length")
         ResponseBuilder.sendError(exchange, "VALIDATION_ERROR", "Invalid input", details)
         
         val response = outputStream.toString()
-        val json = gson.fromJson(response, Map::class.java)
+        val json = jsonParser.fromJson(response, Map::class.java)
         
         assertEquals(false, json["success"])
         @Suppress("UNCHECKED_CAST")
@@ -77,7 +77,7 @@ class ResponseBuilderTest {
     @Test
     fun `should send text response`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         val textContent = "Hello, World!"
         ResponseBuilder.sendText(exchange, textContent)
@@ -89,7 +89,7 @@ class ResponseBuilderTest {
     @Test
     fun `should send response with custom status code`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         ResponseBuilder.sendSuccess(exchange, mapOf("data" to "test"), 201)
         
@@ -99,7 +99,7 @@ class ResponseBuilderTest {
     @Test
     fun `should set CORS headers when enabled`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         ResponseBuilder.setCorsHeaders(exchange, enableCors = true)
         
@@ -112,7 +112,7 @@ class ResponseBuilderTest {
     @Test
     fun `should not set CORS headers when disabled`() {
         val outputStream = ByteArrayOutputStream()
-        val exchange = createTestExchange(outputStream)
+        val exchange = createMockExchange(outputStream)
         
         ResponseBuilder.setCorsHeaders(exchange, enableCors = false)
         
@@ -120,7 +120,7 @@ class ResponseBuilderTest {
         assertTrue(!headers.containsKey("Access-Control-Allow-Origin"))
     }
     
-    private fun createTestExchange(outputStream: OutputStream): HttpExchange {
+    private fun createMockExchange(outputStream: OutputStream): HttpExchange {
         return TestHttpExchange(outputStream)
     }
     
