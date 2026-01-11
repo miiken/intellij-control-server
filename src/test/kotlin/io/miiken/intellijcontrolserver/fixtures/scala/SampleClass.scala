@@ -3,28 +3,27 @@ package testdata.scala
 /**
  * Sample Scala class for testing refactoring operations.
  * 
- * This class includes:
- * - A method to rename (marked with RENAME THIS)
-    
-    val finalTotal = total + tax
-    println(s"Total for $userId: $$$finalTotal")
-    saveOrder(userId, finalTotal)
-  }
+ * This class includes test cases for renaming:
+ * - Methods
+ * - Fields
+ * - Parameters
+ * - Local variables
+ * - Classes
+ */
+class SampleCalculator {
+  // RENAME THIS - Test renaming this field
+  private var oldFieldName: Int = 10
   
-  private def getPrice(item: String): Double = item match {
-    case "book" => 15.99
-    case "pen" => 2.50
-    case "notebook" => 5.99
-    case _ => 10.0
-  }
-  
-  private def saveOrder(userId: String, total: Double): Unit = {
-    println(s"Order saved: $userId -> $$$total")
+  // RENAME THIS - Test renaming this method
+  def oldMethodName(oldParameterName: Int): Int = {
+    // RENAME THIS - Test renaming this local variable
+    val oldVariableName = oldParameterName * 2
+    oldVariableName + oldFieldName
   }
   
   /**
    * Calculate discount based on total amount.
-   * This demonstrates Scala features like pattern matching.
+   * Calls oldMethodName to apply bonus points.
    */
   def calculateDiscount(total: Double, membershipLevel: String): Double = {
     val baseDiscount = membershipLevel match {
@@ -35,6 +34,25 @@ package testdata.scala
     }
     
     val volumeDiscount = if (total > 100.0) 0.05 else 0.0
+    
+    // Call oldMethodName to calculate bonus points
+    val bonusPoints = oldMethodName(total.toInt)
+    oldFieldName += bonusPoints
+    
     Math.min(baseDiscount + volumeDiscount, 0.30)
+  }
+  
+  /**
+   * Process a purchase.
+   * Calls calculateDiscount and oldMethodName.
+   */
+  def processPurchase(amount: Double, level: String): Double = {
+    val discount = calculateDiscount(amount, level)
+    val finalAmount = amount * (1.0 - discount)
+    
+    // Update oldFieldName through oldMethodName
+    oldMethodName(amount.toInt)
+    
+    finalAmount
   }
 }
