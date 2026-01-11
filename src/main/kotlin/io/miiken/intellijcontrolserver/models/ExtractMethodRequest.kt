@@ -65,6 +65,20 @@ data class ExtractMethodRequest(
         example = "private",
         required = false
     )
-    val visibility: String = "private"
+    val visibility: String = "private",
+    
+    @Schema(
+        description = "Optional return type for the extracted method. If omitted, will be inferred from the code.",
+        example = "String",
+        required = false
+    )
+    val returnType: String? = null,
+    
+    @Schema(
+        description = "Whether the extracted method should be static (Java) or top-level (Kotlin). Defaults to false.",
+        example = "false",
+        required = false
+    )
+    val isStatic: Boolean = false
 )
 
