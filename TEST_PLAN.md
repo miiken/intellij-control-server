@@ -9,8 +9,8 @@ This document provides comprehensive manual testing instructions for the Intelli
    - Verify the server is accessible: `curl http://localhost:8765/health`
 
 2. **Test Files Location**
-   - Original test files: `src/test/resources/testdata/{language}/SampleClass.{ext}`
-   - Expected results: `src/test/resources/testdata/expected/{language}/SampleClass_after*.{ext}`
+   - Original test files: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/{language}/SampleClass.{ext}`
+   - Expected results: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/{language}/SampleClass_after*.{ext}`
 
 3. **API Base URL**
    - HTTP API: `http://localhost:8765`
@@ -21,7 +21,7 @@ This document provides comprehensive manual testing instructions for the Intelli
 ## Test Suite 1: Kotlin Refactoring
 
 ### Test File
-`src/test/resources/testdata/kotlin/SampleClass.kt`
+`src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt`
 
 ### Test 1.1: Rename Method (Kotlin)
 
@@ -32,7 +32,7 @@ This document provides comprehensive manual testing instructions for the Intelli
 curl -X POST http://localhost:8765/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/kotlin/SampleClass.kt",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
     "line": 12,
     "oldName": "oldMethodName",
     "newName": "newMethodName"
@@ -43,7 +43,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/rename \
 ```json
 {
   "success": true,
-  "filesChanged": ["src/test/resources/testdata/kotlin/SampleClass.kt"],
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
   "changesCount": 1
 }
 ```
@@ -57,7 +57,7 @@ fun oldMethodName(value: Int): Int {
 fun newMethodName(value: Int): Int {
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/kotlin/SampleClass_afterRename.kt`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/kotlin/SampleClass_afterRename.kt`
 
 **Verification:**
 - Method name changed on line 12
@@ -75,7 +75,7 @@ fun newMethodName(value: Int): Int {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/kotlin/SampleClass.kt",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
     "startLine": 22,
     "endLine": 27
   }'
@@ -112,7 +112,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/kotlin/SampleClass.kt",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
     "startLine": 22,
     "endLine": 27,
     "methodName": "calculateOrderTotal",
@@ -126,7 +126,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 ```json
 {
   "success": true,
-  "filesChanged": ["src/test/resources/testdata/kotlin/SampleClass.kt"],
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
   "changesCount": 1
 }
 ```
@@ -158,7 +158,7 @@ private fun calculateOrderTotal(items: List<String>): Pair<Double, Double> {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/kotlin/SampleClass_afterExtractMethod.kt`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/kotlin/SampleClass_afterExtractMethod.kt`
 
 **Verification:**
 - New method `calculateOrderTotal` exists
@@ -171,7 +171,7 @@ private fun calculateOrderTotal(items: List<String>): Pair<Double, Double> {
 ## Test Suite 2: JavaScript Refactoring
 
 ### Test File
-`src/test/resources/testdata/javascript/SampleClass.js`
+`src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js`
 
 ### Test 2.1: Rename Method (JavaScript)
 
@@ -180,7 +180,7 @@ private fun calculateOrderTotal(items: List<String>): Pair<Double, Double> {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/javascript/SampleClass.js",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
     "line": 11,
     "oldName": "oldMethodName",
     "newName": "newMethodName"
@@ -195,7 +195,7 @@ newMethodName(value) {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/javascript/SampleClass_afterRename.js`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/javascript/SampleClass_afterRename.js`
 
 ---
 
@@ -206,7 +206,7 @@ newMethodName(value) {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/javascript/SampleClass.js",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
     "startLine": 23,
     "endLine": 28
   }'
@@ -235,7 +235,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/javascript/SampleClass.js",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
     "startLine": 23,
     "endLine": 28,
     "methodName": "calculateOrderTotal",
@@ -261,14 +261,14 @@ calculateOrderTotal(items) {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/javascript/SampleClass_afterExtractMethod.js`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/javascript/SampleClass_afterExtractMethod.js`
 
 ---
 
 ## Test Suite 3: TypeScript Refactoring
 
 ### Test File
-`src/test/resources/testdata/typescript/SampleClass.ts`
+`src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts`
 
 ### Test 3.1: Rename Method (TypeScript)
 
@@ -277,7 +277,7 @@ calculateOrderTotal(items) {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/typescript/SampleClass.ts",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
     "line": 11,
     "oldName": "oldMethodName",
     "newName": "newMethodName"
@@ -292,7 +292,7 @@ newMethodName(value: number): number {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/typescript/SampleClass_afterRename.ts`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/typescript/SampleClass_afterRename.ts`
 
 ---
 
@@ -303,7 +303,7 @@ newMethodName(value: number): number {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/typescript/SampleClass.ts",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
     "startLine": 23,
     "endLine": 28
   }'
@@ -332,7 +332,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/typescript/SampleClass.ts",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
     "startLine": 23,
     "endLine": 28,
     "methodName": "calculateOrderTotal",
@@ -358,14 +358,14 @@ private calculateOrderTotal(items: string[]): {total: number, tax: number} {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/typescript/SampleClass_afterExtractMethod.ts`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/typescript/SampleClass_afterExtractMethod.ts`
 
 ---
 
 ## Test Suite 4: Scala Refactoring
 
 ### Test File
-`src/test/resources/testdata/scala/SampleClass.scala`
+`src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala`
 
 ### Test 4.1: Rename Method (Scala)
 
@@ -374,7 +374,7 @@ private calculateOrderTotal(items: string[]): {total: number, tax: number} {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/scala/SampleClass.scala",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
     "line": 13,
     "oldName": "oldMethodName",
     "newName": "newMethodName"
@@ -389,7 +389,7 @@ def newMethodName(value: Int): Int = {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/scala/SampleClass_afterRename.scala`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/scala/SampleClass_afterRename.scala`
 
 ---
 
@@ -400,7 +400,7 @@ def newMethodName(value: Int): Int = {
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/scala/SampleClass.scala",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
     "startLine": 25,
     "endLine": 30
   }'
@@ -429,7 +429,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/execute \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/scala/SampleClass.scala",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
     "startLine": 25,
     "endLine": 30,
     "methodName": "calculateOrderTotal",
@@ -455,7 +455,7 @@ private def calculateOrderTotal(items: List[String]): (Double, Double) = {
 }
 ```
 
-**Full Expected File:** `src/test/resources/testdata/expected/scala/SampleClass_afterExtractMethod.scala`
+**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/scala/SampleClass_afterExtractMethod.scala`
 
 ---
 
@@ -480,13 +480,13 @@ After completing all tests, revert the test files to their original state:
 
 ```bash
 # Revert all test files
-git checkout src/test/resources/testdata/kotlin/SampleClass.kt
-git checkout src/test/resources/testdata/javascript/SampleClass.js
-git checkout src/test/resources/testdata/typescript/SampleClass.ts
-git checkout src/test/resources/testdata/scala/SampleClass.scala
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
 
 # Or revert all at once
-git checkout src/test/resources/testdata/*/SampleClass.*
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
 ```
 
 ---
@@ -528,7 +528,7 @@ curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-meth
 curl -X POST http://localhost:8765/intellij-control-server/refactor/extract-method/analyze \
   -H "Content-Type: application/json" \
   -d '{
-    "filePath": "src/test/resources/testdata/kotlin/SampleClass.kt",
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
     "startLine": 100,
     "endLine": 105
   }'

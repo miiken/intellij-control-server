@@ -1,4 +1,4 @@
-package testdata.kotlin
+package io.miiken.intellijcontrolserver.fixtures.kotlin
 
 /**
  * Sample Kotlin class for testing refactoring operations.
