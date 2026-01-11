@@ -46,7 +46,12 @@ dependencies {
 intellij {
     version.set("2024.3")
     type.set("IC") // IntelliJ IDEA Community Edition
-    plugins.set(listOf("tasks", "java"))
+    plugins.set(listOf(
+        "tasks",
+        "java"
+        // Note: Kotlin and JavaScript plugins need to be bundled with runtime IDE
+        // The plugin depends on them being installed in the target IDE
+    ))
 }
 
 idea {

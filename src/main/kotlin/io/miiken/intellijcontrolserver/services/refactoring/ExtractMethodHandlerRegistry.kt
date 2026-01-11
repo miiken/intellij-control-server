@@ -12,8 +12,8 @@ object ExtractMethodHandlerRegistry {
     private val handlers: List<LanguageExtractMethodRefactoring> by lazy {
         listOf(
             KotlinExtractMethodRefactoring(),
-            JavaScriptExtractMethodRefactoring(),
-            ScalaExtractMethodRefactoring()
+            JavaScriptExtractMethodRefactoring()
+            // Note: Scala support requires Ultimate Edition with Scala plugin
         )
     }
     
@@ -33,7 +33,7 @@ object ExtractMethodHandlerRegistry {
      * @return List of human-readable language names that are supported
      */
     fun getSupportedLanguages(): List<String> {
-        return listOf("Kotlin", "JavaScript", "TypeScript", "Scala")
+        return listOf("Kotlin", "JavaScript", "TypeScript")
     }
     
     /**
