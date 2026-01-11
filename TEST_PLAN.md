@@ -10,7 +10,7 @@ This document provides comprehensive manual testing instructions for the Intelli
 
 2. **Test Files Location**
    - Original test files: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/{language}/SampleClass.{ext}`
-   - Expected results: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/{language}/SampleClass_after*.{ext}`
+   - Expected results: `src/test/resources/expected/{language}/SampleClass_after*.{ext}`
 
 3. **API Base URL**
    - HTTP API: `http://localhost:8765`
@@ -57,7 +57,7 @@ fun oldMethodName(value: Int): Int {
 fun newMethodName(value: Int): Int {
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/kotlin/SampleClass_afterRename.kt`
+**Full Expected File:** `src/test/resources/expected/kotlin/SampleClass_afterRename.kt`
 
 **Verification:**
 - Method name changed on line 12
@@ -158,7 +158,7 @@ private fun calculateOrderTotal(items: List<String>): Pair<Double, Double> {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/kotlin/SampleClass_afterExtractMethod.kt`
+**Full Expected File:** `src/test/resources/expected/kotlin/SampleClass_afterExtractMethod.kt`
 
 **Verification:**
 - New method `calculateOrderTotal` exists
@@ -195,7 +195,7 @@ newMethodName(value) {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/javascript/SampleClass_afterRename.js`
+**Full Expected File:** `src/test/resources/expected/javascript/SampleClass_afterRename.js`
 
 ---
 
@@ -261,7 +261,7 @@ calculateOrderTotal(items) {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/javascript/SampleClass_afterExtractMethod.js`
+**Full Expected File:** `src/test/resources/expected/javascript/SampleClass_afterExtractMethod.js`
 
 ---
 
@@ -292,7 +292,7 @@ newMethodName(value: number): number {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/typescript/SampleClass_afterRename.ts`
+**Full Expected File:** `src/test/resources/expected/typescript/SampleClass_afterRename.ts`
 
 ---
 
@@ -358,7 +358,7 @@ private calculateOrderTotal(items: string[]): {total: number, tax: number} {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/typescript/SampleClass_afterExtractMethod.ts`
+**Full Expected File:** `src/test/resources/expected/typescript/SampleClass_afterExtractMethod.ts`
 
 ---
 
@@ -389,7 +389,7 @@ def newMethodName(value: Int): Int = {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/scala/SampleClass_afterRename.scala`
+**Full Expected File:** `src/test/resources/expected/scala/SampleClass_afterRename.scala`
 
 ---
 
@@ -455,7 +455,7 @@ private def calculateOrderTotal(items: List[String]): (Double, Double) = {
 }
 ```
 
-**Full Expected File:** `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/expected/scala/SampleClass_afterExtractMethod.scala`
+**Full Expected File:** `src/test/resources/expected/scala/SampleClass_afterExtractMethod.scala`
 
 ---
 
