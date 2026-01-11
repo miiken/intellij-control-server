@@ -5,30 +5,6 @@ package testdata.scala
  * 
  * This class includes:
  * - A method to rename (marked with RENAME THIS)
- * - A method with extractable code (marked with EXTRACT START/END)
- */
-class SampleCalculator {
-  
-  // RENAME THIS - Test renaming this method
-  def newMethodName(value: Int): Int = {
-    value * 2
-  }
-  
-  /**
-   * Process an order with multiple items.
-   * Contains code that should be extracted into a separate method.
-   */
-  def processOrder(userId: String, items: List[String]): Unit = {
-    println(s"Processing order for user: $userId")
-    
-    // EXTRACT START (lines 25-30)
-    var total = 0.0
-    for (item <- items) {
-      val price = getPrice(item)
-      total += price
-    }
-    val tax = total * 0.1
-    // EXTRACT END
     
     val finalTotal = total + tax
     println(s"Total for $userId: $$$finalTotal")

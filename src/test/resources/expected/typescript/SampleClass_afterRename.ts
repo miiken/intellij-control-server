@@ -3,30 +3,6 @@
  * 
  * This class includes:
  * - A method to rename (marked with RENAME THIS)
- * - A method with extractable code (marked with EXTRACT START/END)
- */
-class SampleCalculator {
-    
-    // RENAME THIS - Test renaming this method
-    newMethodName(value: number): number {
-        return value * 2;
-    }
-    
-    /**
-     * Process an order with multiple items.
-     * Contains code that should be extracted into a separate method.
-     */
-    processOrder(userId: string, items: string[]): void {
-        console.log(`Processing order for user: ${userId}`);
-        
-        // EXTRACT START (lines 23-28)
-        let total: number = 0.0;
-        for (const item of items) {
-            const price = this.getPrice(item);
-            total += price;
-        }
-        const tax: number = total * 0.1;
-        // EXTRACT END
         
         const finalTotal = total + tax;
         console.log(`Total for ${userId}: $${finalTotal}`);

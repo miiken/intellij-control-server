@@ -12,7 +12,6 @@
         <li><strong>Refactoring:</strong>
             <ul>
                 <li><strong>Rename Symbols</strong>: Rename variables, methods, classes, and parameters across your entire project with IntelliJ's powerful refactoring engine. Works with all languages supported by IntelliJ.</li>
-                <li><strong>Extract Method</strong>: Extract code selections into new methods using IntelliJ's native refactoring engine. Two-phase API (analyze → execute) allows AI assistants to understand code context before extracting. Supports Kotlin, JavaScript, TypeScript, and Scala with full parameter detection, return type inference, and visibility control.</li>
             </ul>
         </li>
         <li><strong>HTTP REST API</strong>: Local server (default port 8765) with comprehensive OpenAPI documentation</li>
@@ -72,13 +71,13 @@
         <li><strong>Type-Safe API</strong>: All endpoints return strongly-typed data classes</li>
         <li><strong>AI-Friendly</strong>: Designed for integration with AI coding tools like Cursor</li>
     </ul>
-    <p><em>Note: Extract method API is planned for v1.1</em></p>
     ]]></change-notes>
 
     <!-- Plugin depends on IntelliJ Platform modules -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.tasks</depends>
+    <depends optional="true">org.jetbrains.kotlin</depends>
 
     <!-- Extension points and services -->
     <extensions defaultExtensionNs="com.intellij">

@@ -2,10 +2,6 @@ package io.miiken.intellijcontrolserver.server.controllers
 
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.project.ProjectManager
-import io.miiken.intellijcontrolserver.models.ExtractMethodAnalysis
-import io.miiken.intellijcontrolserver.models.ExtractMethodExecuteRequest
-import io.miiken.intellijcontrolserver.models.ExtractMethodOptions
-import io.miiken.intellijcontrolserver.models.ExtractMethodRequest
 import io.miiken.intellijcontrolserver.models.RefactoringResult
 import io.miiken.intellijcontrolserver.models.RenameRequest
 import io.miiken.intellijcontrolserver.services.RefactoringService
@@ -24,8 +20,12 @@ import jakarta.ws.rs.PathParam
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 
+/**
+ * REST controller for refactoring operations.
+ * Provides endpoints for symbol renaming and other refactorings.
+ */
+@Tag(name = "Refactoring", description = "Code refactoring operations")
 @Path("/{projectName}/refactor")
-@Tag(name = "Refactoring", description = "Code refactoring operations (rename, extract method, etc.)")
 class RefactoringController {
     
     @POST
@@ -33,8 +33,8 @@ class RefactoringController {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
     @Operation(
-        summary = "Rename symbol",
-        description = "Rename a class, method, variable, or parameter across all usages in the project. Verifies the oldName matches before renaming to prevent accidental changes."
+        summary = "Rename a symbol",
+        description = "Rename a variable, function, class, or other symbol at the specified location using IntelliJ's native refactoring engine"
     )
     @SwaggerRequestBody(
         description = "Rename request parameters",
@@ -43,8 +43,7 @@ class RefactoringController {
             mediaType = MediaType.APPLICATION_JSON,
             schema = Schema(implementation = RenameRequest::class),
             examples = [ExampleObject(
-                name = "Rename method",
-                value = """{"filePath":"src/main/kotlin/Service.kt","line":15,"oldName":"processUser","newName":"handleUser"}"""
+                value = """{"filePath":"src/main/kotlin/Service.kt","line":10,"column":5,"oldName":"userId","newName":"customerId"}"""
             )]
         )]
     )
@@ -55,11 +54,11 @@ class RefactoringController {
             mediaType = MediaType.APPLICATION_JSON,
             schema = Schema(implementation = RefactoringResult::class),
             examples = [ExampleObject(
-                value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt","src/test/kotlin/ServiceTest.kt"],"changesCount":12}"""
+                value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt","src/main/kotlin/Controller.kt"],"changesCount":5}"""
             )]
         )]
     )
-    @ApiResponse(responseCode = "400", description = "Rename failed (conflict or invalid input)")
+    @ApiResponse(responseCode = "400", description = "Rename failed")
     @ApiResponse(responseCode = "404", description = "Project not found")
     fun rename(
         @PathParam("projectName")
@@ -71,210 +70,6 @@ class RefactoringController {
         
         val project = findProject(projectName)
         val result = RefactoringService.rename(project, request)
-        
-        if (!result.success) {
-            val error = result.error!!
-            throw RefactoringException(error.code, error.message, error.details)
-        }
-        
-        return result
-    }
-    
-    @POST
-    @Path("/extract-method")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(
-        summary = "Extract method",
-        description = "Extract selected code into a new method. Automatically detects parameters and return type. Optionally specify parameter order and visibility."
-    )
-    @SwaggerRequestBody(
-        description = "Extract method request parameters",
-        required = true,
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = ExtractMethodRequest::class),
-            examples = [ExampleObject(
-                name = "Basic extraction",
-                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15,"methodName":"calculateTotal"}"""
-            ), ExampleObject(
-                name = "With parameter order and columns",
-                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15,"startColumn":4,"endColumn":20,"methodName":"calculateTotal","parameterOrder":["userId","amount","currency"],"visibility":"private"}"""
-            )]
-        )]
-    )
-    @ApiResponse(
-        responseCode = "200",
-        description = "Extract method successful",
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = RefactoringResult::class),
-            examples = [ExampleObject(
-                value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt"],"changesCount":1}"""
-            )]
-        )]
-    )
-    @ApiResponse(responseCode = "400", description = "Extract method failed")
-    @ApiResponse(responseCode = "404", description = "Project not found")
-    @ApiResponse(responseCode = "501", description = "Not yet implemented")
-    fun extractMethod(
-        @PathParam("projectName")
-        @Parameter(description = "Name of the project to perform refactoring in", required = true)
-        projectName: String,
-        request: ExtractMethodRequest
-    ): RefactoringResult {
-        validateExtractMethodRequest(request)
-        
-        val project = findProject(projectName)
-        val result = RefactoringService.extractMethod(project, request)
-        
-        if (!result.success) {
-            val error = result.error!!
-            val statusCode = if (error.code == "NOT_IMPLEMENTED") 501 else 400
-            throw RefactoringException(error.code, error.message, error.details, statusCode)
-        }
-        
-        return result
-    }
-    
-    @POST
-    @Path("/extract-method/analyze")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(
-        summary = "Analyze code for extract method (Phase 1)",
-        description = "Analyze selected code and return suggestions for method extraction without making changes. Part of the two-phase extract method API."
-    )
-    @SwaggerRequestBody(
-        description = "Code selection to analyze",
-        required = true,
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = ExtractMethodRequest::class),
-            examples = [ExampleObject(
-                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15}"""
-            )]
-        )]
-    )
-    @ApiResponse(
-        responseCode = "200",
-        description = "Analysis successful",
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = ExtractMethodAnalysis::class),
-            examples = [ExampleObject(
-                value = """{"canExtract":true,"suggestedMethodName":"calculateTotal","detectedParameters":[{"name":"userId","type":"String","isOutput":false}],"returnType":"Double","suggestedVisibility":"private","language":"Kotlin"}"""
-            )]
-        )]
-    )
-    @ApiResponse(responseCode = "400", description = "Invalid request")
-    @ApiResponse(responseCode = "404", description = "Project or file not found")
-    fun analyzeExtractMethod(
-        @PathParam("projectName")
-        @Parameter(description = "Name of the project", required = true)
-        projectName: String,
-        request: ExtractMethodRequest
-    ): ExtractMethodAnalysis {
-        // Only validate file path and line numbers for analysis
-        if (request.filePath.isBlank()) {
-            throw RefactoringException("INVALID_REQUEST", "filePath is required")
-        }
-        if (request.startLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "startLine must be positive (1-based)")
-        }
-        if (request.endLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be positive (1-based)")
-        }
-        if (request.endLine < request.startLine) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be greater than or equal to startLine")
-        }
-        
-        val project = findProject(projectName)
-        val analysis = RefactoringService.analyzeExtractMethod(project, request)
-        
-        if (!analysis.canExtract && analysis.errorMessage != null) {
-            throw RefactoringException("ANALYSIS_FAILED", analysis.errorMessage)
-        }
-        
-        return analysis
-    }
-    
-    @POST
-    @Path("/extract-method/execute")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    @Operation(
-        summary = "Execute extract method with options (Phase 2)",
-        description = "Execute method extraction using options provided after analyzing. Part of the two-phase extract method API."
-    )
-    @SwaggerRequestBody(
-        description = "Extract method execution parameters",
-        required = true,
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            examples = [ExampleObject(
-                value = """{"filePath":"src/main/kotlin/Service.kt","startLine":10,"endLine":15,"methodName":"calculateTotal","parameterOrder":["userId"],"visibility":"private","isStatic":false}"""
-            )]
-        )]
-    )
-    @ApiResponse(
-        responseCode = "200",
-        description = "Extraction successful",
-        content = [Content(
-            mediaType = MediaType.APPLICATION_JSON,
-            schema = Schema(implementation = RefactoringResult::class),
-            examples = [ExampleObject(
-                value = """{"success":true,"filesChanged":["src/main/kotlin/Service.kt"],"changesCount":1}"""
-            )]
-        )]
-    )
-    @ApiResponse(responseCode = "400", description = "Extraction failed")
-    @ApiResponse(responseCode = "404", description = "Project or file not found")
-    fun executeExtractMethod(
-        @PathParam("projectName")
-        @Parameter(description = "Name of the project", required = true)
-        projectName: String,
-        request: ExtractMethodExecuteRequest
-    ): RefactoringResult {
-        // Validate the request
-        if (request.filePath.isBlank()) {
-            throw RefactoringException("INVALID_REQUEST", "filePath is required")
-        }
-        if (request.startLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "startLine must be positive (1-based)")
-        }
-        if (request.endLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be positive (1-based)")
-        }
-        if (request.endLine < request.startLine) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be greater than or equal to startLine")
-        }
-        if (request.methodName.isBlank()) {
-            throw RefactoringException("INVALID_REQUEST", "methodName is required")
-        }
-        
-        val project = findProject(projectName)
-        
-        // Convert request to ExtractMethodRequest and ExtractMethodOptions
-        val baseRequest = ExtractMethodRequest(
-            projectName = null,
-            filePath = request.filePath,
-            startLine = request.startLine,
-            endLine = request.endLine,
-            startColumn = request.startColumn,
-            endColumn = request.endColumn,
-            methodName = request.methodName
-        )
-        
-        val options = ExtractMethodOptions(
-            methodName = request.methodName,
-            parameterOrder = request.parameterOrder,
-            visibility = request.visibility,
-            isStatic = request.isStatic,
-            returnType = request.returnType
-        )
-        
-        val result = RefactoringService.executeExtractMethodWithOptions(project, baseRequest, options)
         
         if (!result.success) {
             val error = result.error!!
@@ -308,36 +103,6 @@ class RefactoringController {
         }
     }
     
-    internal fun validateExtractMethodRequest(request: ExtractMethodRequest) {
-        if (request.filePath.isBlank()) {
-            throw RefactoringException("INVALID_REQUEST", "filePath is required")
-        }
-        if (request.startLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "startLine must be positive (1-based)")
-        }
-        if (request.endLine < 1) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be positive (1-based)")
-        }
-        if (request.endLine < request.startLine) {
-            throw RefactoringException("INVALID_REQUEST", "endLine must be greater than or equal to startLine")
-        }
-        if (request.startColumn != null && request.startColumn < 0) {
-            throw RefactoringException("INVALID_REQUEST", "startColumn must be non-negative (0-based)")
-        }
-        if (request.endColumn != null && request.endColumn < 0) {
-            throw RefactoringException("INVALID_REQUEST", "endColumn must be non-negative (0-based)")
-        }
-        if (request.methodName.isBlank()) {
-            throw RefactoringException("INVALID_REQUEST", "methodName is required")
-        }
-        if (!request.methodName.matches(Regex("^[a-zA-Z_][a-zA-Z0-9_]*$"))) {
-            throw RefactoringException("INVALID_REQUEST", "methodName must be a valid identifier")
-        }
-        if (request.visibility !in listOf("private", "protected", "public", "internal")) {
-            throw RefactoringException("INVALID_REQUEST", "visibility must be one of: private, protected, public, internal")
-        }
-    }
-    
     class RefactoringException(
         val code: String,
         override val message: String,
@@ -347,4 +112,3 @@ class RefactoringController {
     
     class ProjectNotFoundException(projectName: String) : RuntimeException("Project '$projectName' not found")
 }
-
