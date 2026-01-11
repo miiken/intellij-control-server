@@ -1,0 +1,256 @@
+# Refactoring Testing Workflow
+
+This rule guides automated testing of IntelliJ Control Server rename refactoring operations using the TEST_PLAN.md.
+
+## Pre-Test Setup
+
+Before starting any tests, ensure test files are clean:
+
+```bash
+# Check status of test files
+git status src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/
+
+# If any test files are modified, revert them
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
+
+# Or revert all at once
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
+
+# Verify they're clean
+git status src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/
+```
+
+If there are uncommitted changes to production code, stash them:
+```bash
+git stash push -m "WIP: testing refactorings"
+```
+
+## Test Execution Process
+
+### For Each Test in TEST_PLAN.md:
+
+1. **Identify the Test**
+   - Read the test ID (e.g., "Test 1.1: Rename Method (Kotlin)")
+   - Note the file to test, operation parameters, and expected results
+
+2. **Execute Using MCP Tools**
+   - For Rename: Use `intellij_rename_symbol` MCP tool
+   
+   **IMPORTANT**: Use the MCP tools, NOT direct HTTP API calls
+
+3. **Verify Response**
+   - Check the response matches expected response in TEST_PLAN.md
+   - If error occurred unexpectedly, this is a bug
+
+4. **Compare Results**
+   - Read the modified test file
+   - Compare inline code snippet from TEST_PLAN.md with actual result
+   - For thorough verification, diff with expected file:
+     ```bash
+     diff src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt \
+          src/test/resources/expected/kotlin/SampleClass_afterRename.kt
+     ```
+
+5. **If Test Passes**
+   - Mark test as passing in your notes
+   - Continue to next test
+
+6. **If Test Fails**
+   - **DO NOT MODIFY TEST_PLAN.md** (tests are source of truth)
+   - **DO NOT MODIFY EXPECTED FILES** (they define correct behavior)
+   - Identify the bug in the implementation
+   - Fix the bug in the relevant source file:
+     - Language handlers: `src/main/kotlin/io/miiken/intellijcontrolserver/services/refactoring/`
+     - Service layer: `src/main/kotlin/io/miiken/intellijcontrolserver/services/RefactoringService.kt`
+     - Controller: `src/main/kotlin/io/miiken/intellijcontrolserver/server/controllers/`
+     - Models: `src/main/kotlin/io/miiken/intellijcontrolserver/models/`
+   - Rebuild the plugin:
+     ```bash
+     ./gradlew buildPlugin -x test
+     ```
+   - Deploy the plugin using the rebuild script
+   - **REVERT TEST FILES** before re-running:
+     ```bash
+     git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
+     ```
+   - Re-run the failed test from step 1
+   - Repeat until test passes
+
+## Test Order
+
+Execute tests in this order (as defined in TEST_PLAN.md):
+
+### Kotlin Tests
+1. Test 1.1: Rename Method (Kotlin)
+
+### JavaScript Tests
+2. Test 2.1: Rename Method (JavaScript)
+
+### TypeScript Tests
+3. Test 3.1: Rename Method (TypeScript)
+
+### Scala Tests
+4. Test 4.1: Rename Method (Scala)
+
+## After All Tests Pass
+
+1. **Commit Bug Fixes**
+   ```bash
+   # Review changes
+   git status
+   git diff
+   
+   # Stage implementation fixes
+   git add src/main/kotlin/io/miiken/intellijcontrolserver/
+   
+   # Commit with descriptive message
+   git commit -m "fix: [description of what was fixed]
+   
+   - Fixed issue with [specific problem]
+   - All refactoring tests now pass
+   - Tested on Kotlin, JavaScript, TypeScript, Scala"
+   ```
+
+2. **Clean Up Test Files**
+   ```bash
+   # Revert test files to allow re-running tests
+   git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
+   
+   # Verify clean state
+   git status
+   ```
+
+3. **Restore Stashed Work** (if any)
+   ```bash
+   git stash list
+   git stash pop  # if you stashed changes earlier
+   ```
+
+## Important Rules
+
+### ❌ NEVER DO
+- Modify TEST_PLAN.md without user approval
+- Modify expected result files in `src/test/resources/expected/`
+- Modify test input files in `src/test/kotlin/.../fixtures/` except during testing
+- Commit test file modifications
+- Skip tests or mark them as "assumed passing"
+- Use HTTP API directly instead of MCP tools
+
+### ✅ ALWAYS DO
+- Revert test files before starting test suite
+- Use MCP tools for all refactoring operations
+- Compare both inline snippets AND full file diffs
+- Fix bugs in implementation, not in tests
+- Revert test files after each bug fix before re-testing
+- Commit bug fixes with clear messages
+- Revert test files after all tests pass
+
+## Test Execution Template
+
+For each test, follow this exact sequence:
+
+```
+1. TEST: [Test ID and Description]
+   
+2. OPERATION:
+   - Tool: intellij_[tool_name]
+   - Parameters: [list parameters from test plan]
+   
+3. EXPECTED: [describe expected behavior]
+   
+4. EXECUTE: [call the MCP tool]
+   
+5. VERIFY:
+   - Response matches expected: [YES/NO]
+   - Code matches inline snippet: [YES/NO]
+   - File diff shows expected changes: [YES/NO]
+   
+6. RESULT: [PASS/FAIL]
+   
+7. IF FAIL:
+   - Bug identified: [description]
+   - Location: [file and line]
+   - Fix applied: [description]
+   - Re-test: [link to step 1]
+```
+
+## Rebuild and Deploy Command
+
+After fixing any bugs:
+
+```bash
+cd ~/IdeaProjects/intellij-control-server && \
+echo "🔨 Building plugin..." && \
+./gradlew buildPlugin -x test 2>&1 | tail -8 && \
+echo "" && \
+PLUGIN_ZIP="build/distributions/intellij-control-server-1.0.0.zip" && \
+JETBRAINS_DIR=~/Library/Application\ Support/JetBrains && \
+echo "🔍 Scanning for JetBrains IDEs..." && \
+IDES=($(ls -1 "$JETBRAINS_DIR" | grep -E "^(IntelliJIdea|WebStorm|PhpStorm|PyCharm|RubyMine|GoLand|CLion|DataGrip|Rider)" | sort -V)) && \
+if [ ${#IDES[@]} -eq 0 ]; then echo "❌ No compatible IDEs found"; exit 1; fi && \
+echo "📍 Found ${#IDES[@]} IDE(s):" && \
+for ide in "${IDES[@]}"; do echo "   - $ide"; done && \
+echo "" && \
+for ide in "${IDES[@]}"; do \
+  PLUGIN_DIR="$JETBRAINS_DIR/$ide/plugins/intellij-control-server" && \
+  rm -rf "$PLUGIN_DIR" && \
+  unzip -q "$PLUGIN_ZIP" -d "$JETBRAINS_DIR/$ide/plugins/" && \
+  echo "✅ Installed to $ide"; \
+done && \
+echo "" && \
+echo "⚠️  You may need to restart IntelliJ for changes to take effect"
+```
+
+## Progress Tracking
+
+Keep a checklist in your working notes:
+
+- [ ] Pre-test setup complete (files reverted)
+- [ ] Test 1.1 - Kotlin Rename
+- [ ] Test 2.1 - JavaScript Rename
+- [ ] Test 3.1 - TypeScript Rename
+- [ ] Test 4.1 - Scala Rename
+- [ ] Bug fixes committed
+- [ ] Test files reverted
+
+## Example Test Execution
+
+```
+TEST: 1.1 - Rename Method (Kotlin)
+
+OPERATION:
+- Tool: intellij_rename_symbol
+- File: src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+- Line: 13
+- Old Name: newMethodName
+- New Name: renamedMethod
+
+EXPECTED:
+- Response: {"success": true, "filesChanged": [...], "changesCount": 1}
+- Line 13 changes from "fun newMethodName" to "fun renamedMethod"
+
+EXECUTE:
+[Call MCP tool with parameters]
+
+VERIFY:
+- Response: ✅ success=true, changesCount=1
+- Inline snippet: ✅ Line 13 shows "fun renamedMethod"
+- Full diff: ✅ Only line 13 changed
+
+RESULT: ✅ PASS
+
+Moving to Test 2.1 (JavaScript)...
+```
+
+## When to Ask User
+
+Only interrupt the user if:
+- Multiple tests fail with the same root cause and you're unsure of the fix
+- A test failure suggests the test plan or expected files might be wrong
+- The bug requires architectural changes
+- You encounter an unexpected error you cannot resolve
+
+Otherwise, continue iterating through fix → rebuild → deploy → test cycles until all tests pass.

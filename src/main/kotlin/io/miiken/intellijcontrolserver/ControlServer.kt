@@ -8,6 +8,7 @@ import io.miiken.intellijcontrolserver.server.controllers.ApiDocsController
 import io.miiken.intellijcontrolserver.server.controllers.HealthController
 import io.miiken.intellijcontrolserver.server.controllers.McpController
 import io.miiken.intellijcontrolserver.server.controllers.RefactoringController
+import io.miiken.intellijcontrolserver.server.controllers.SystemController
 import io.miiken.intellijcontrolserver.server.openapi.OpenApiGenerator
 import io.miiken.intellijcontrolserver.server.routing.ControllerDispatcher
 import io.miiken.intellijcontrolserver.server.routing.ControllerRegistry
@@ -95,6 +96,7 @@ class ControlServer(private val config: ServerConfig) : Disposable {
         registry.registerController(HealthController(startTime))
         registry.registerController(RefactoringController())
         registry.registerController(McpController())
+        registry.registerController(SystemController())
         
         val openApiGenerator = OpenApiGenerator(registry)
         registry.registerController(ApiDocsController(openApiGenerator))
