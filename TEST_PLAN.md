@@ -1,6 +1,6 @@
-# Test Plan: Refactoring Operations
+# Test Plan: Rename Refactoring
 
-This document provides comprehensive manual testing instructions for the IntelliJ Control Server plugin's refactoring capabilities.
+This document provides comprehensive testing instructions for the IntelliJ Control Server plugin's rename refactoring capabilities.
 
 ## Test Setup
 
@@ -9,8 +9,8 @@ This document provides comprehensive manual testing instructions for the Intelli
    - Verify the server is accessible: `curl http://localhost:8767/health`
 
 2. **Test Files Location**
-   - Original test files: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/{language}/SampleClass.{ext}`
-   - Expected results: `src/test/resources/expected/{language}/SampleClass_afterRename.{ext}`
+   - Test files: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/{language}/SampleClass.{ext}`
+   - Expected results: `src/test/resources/expected/{language}/SampleClass_after*.{ext}`
 
 3. **API Base URL**
    - HTTP API: `http://localhost:8767`
@@ -18,14 +18,14 @@ This document provides comprehensive manual testing instructions for the Intelli
 
 ---
 
-## Test Suite 1: Kotlin Rename
+## Test Suite 1: Kotlin Rename Tests
 
 ### Test File
 `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt`
 
-### Test 1.1: Rename Method (Kotlin)
+### Test 1.1: Rename Class (Kotlin)
 
-**Operation:** Rename `newMethodName` to `renamedMethod`
+**Operation:** Rename class `SampleCalculator` to `Calculator`
 
 **API Call:**
 ```bash
@@ -33,9 +33,9 @@ curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
     "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
-    "line": 13,
-    "oldName": "newMethodName",
-    "newName": "renamedMethod"
+    "line": 12,
+    "oldName": "SampleCalculator",
+    "newName": "Calculator"
   }'
 ```
 
@@ -49,9 +49,7 @@ curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
 ```
 
 **Verification:**
-- Compare the modified file with `src/test/resources/expected/kotlin/SampleClass_afterRename.kt`
-- Ensure method name changed from `newMethodName` to `renamedMethod`
-- Verify IntelliJ's refactoring engine was used (all references updated)
+- Class declaration on line 12 changes from `class SampleCalculator` to `class Calculator`
 
 **Revert:**
 ```bash
@@ -60,14 +58,162 @@ git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/Sam
 
 ---
 
-## Test Suite 2: JavaScript Rename
+### Test 1.2: Rename Field (Kotlin)
+
+**Operation:** Rename field `oldFieldName` to `counter`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
+    "line": 15,
+    "oldName": "oldFieldName",
+    "newName": "counter"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
+  "changesCount": 1
+}
+```
+
+**Verification:**
+- Line 15: `private var oldFieldName` → `private var counter`
+- Line 21: `return oldVariableName + oldFieldName` → `return oldVariableName + counter`
+- Line 33: `oldFieldName += bonusPoints` → `counter += bonusPoints`
+- Code should still compile (all references updated)
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+```
+
+---
+
+### Test 1.3: Rename Method (Kotlin)
+
+**Operation:** Rename method `oldMethodName` to `calculate`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
+    "line": 18,
+    "oldName": "oldMethodName",
+    "newName": "calculate"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
+  "changesCount": 1
+}
+```
+
+**Verification:**
+- Line 18: `fun oldMethodName` → `fun calculate`
+- Line 32: `val bonusPoints = oldMethodName(total.toInt())` → `val bonusPoints = calculate(total.toInt())`
+- Line 45: `oldMethodName(amount.toInt())` → `calculate(amount.toInt())`
+- Code should still compile (all call sites updated)
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+```
+
+---
+
+### Test 1.4: Rename Parameter (Kotlin)
+
+**Operation:** Rename parameter `oldParameterName` to `value`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
+    "line": 18,
+    "oldName": "oldParameterName",
+    "newName": "value"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
+  "changesCount": 1
+}
+```
+
+**Verification:**
+- Line 18: `oldParameterName: Int` → `value: Int`
+- Line 20: `oldParameterName * 2` → `value * 2`
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+```
+
+---
+
+### Test 1.5: Rename Local Variable (Kotlin)
+
+**Operation:** Rename local variable `oldVariableName` to `result`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
+    "line": 20,
+    "oldName": "oldVariableName",
+    "newName": "result"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "filesChanged": ["src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt"],
+  "changesCount": 1
+}
+```
+
+**Verification:**
+- Line 20: `val oldVariableName` → `val result`
+- Line 21: `return oldVariableName` → `return result`
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+```
+
+---
+
+## Test Suite 2: JavaScript Rename Tests
 
 ### Test File
 `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js`
 
-### Test 2.1: Rename Method (JavaScript)
+### Test 2.1: Rename Class (JavaScript)
 
-**Operation:** Rename `newMethodName` to `renamedMethod`
+**Operation:** Rename class `SampleCalculator` to `Calculator`
 
 **API Call:**
 ```bash
@@ -75,14 +221,11 @@ curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
     "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
-    "line": 7,
-    "oldName": "newMethodName",
-    "newName": "renamedMethod"
+    "line": 11,
+    "oldName": "SampleCalculator",
+    "newName": "Calculator"
   }'
 ```
-
-**Verification:**
-- Compare with `src/test/resources/expected/javascript/SampleClass_afterRename.js`
 
 **Revert:**
 ```bash
@@ -91,14 +234,106 @@ git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript
 
 ---
 
-## Test Suite 3: TypeScript Rename
+### Test 2.2: Rename Field (JavaScript)
+
+**Operation:** Rename field `oldFieldName` to `counter`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
+    "line": 14,
+    "oldName": "oldFieldName",
+    "newName": "counter"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+```
+
+---
+
+### Test 2.3: Rename Method (JavaScript)
+
+**Operation:** Rename method `oldMethodName` to `calculate`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
+    "line": 18,
+    "oldName": "oldMethodName",
+    "newName": "calculate"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+```
+
+---
+
+### Test 2.4: Rename Parameter (JavaScript)
+
+**Operation:** Rename parameter `oldParameterName` to `value`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
+    "line": 18,
+    "oldName": "oldParameterName",
+    "newName": "value"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+```
+
+---
+
+### Test 2.5: Rename Local Variable (JavaScript)
+
+**Operation:** Rename local variable `oldVariableName` to `result`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js",
+    "line": 20,
+    "oldName": "oldVariableName",
+    "newName": "result"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+```
+
+---
+
+## Test Suite 3: TypeScript Rename Tests
 
 ### Test File
 `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts`
 
-### Test 3.1: Rename Method (TypeScript)
+### Test 3.1: Rename Class (TypeScript)
 
-**Operation:** Rename `newMethodName` to `renamedMethod`
+**Operation:** Rename class `SampleCalculator` to `Calculator`
 
 **API Call:**
 ```bash
@@ -106,14 +341,11 @@ curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
     "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
-    "line": 7,
-    "oldName": "newMethodName",
-    "newName": "renamedMethod"
+    "line": 11,
+    "oldName": "SampleCalculator",
+    "newName": "Calculator"
   }'
 ```
-
-**Verification:**
-- Compare with `src/test/resources/expected/typescript/SampleClass_afterRename.ts`
 
 **Revert:**
 ```bash
@@ -122,14 +354,106 @@ git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript
 
 ---
 
-## Test Suite 4: Scala Rename
+### Test 3.2: Rename Field (TypeScript)
+
+**Operation:** Rename field `oldFieldName` to `counter`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
+    "line": 13,
+    "oldName": "oldFieldName",
+    "newName": "counter"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+```
+
+---
+
+### Test 3.3: Rename Method (TypeScript)
+
+**Operation:** Rename method `oldMethodName` to `calculate`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
+    "line": 16,
+    "oldName": "oldMethodName",
+    "newName": "calculate"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+```
+
+---
+
+### Test 3.4: Rename Parameter (TypeScript)
+
+**Operation:** Rename parameter `oldParameterName` to `value`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
+    "line": 16,
+    "oldName": "oldParameterName",
+    "newName": "value"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+```
+
+---
+
+### Test 3.5: Rename Local Variable (TypeScript)
+
+**Operation:** Rename local variable `oldVariableName` to `result`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts",
+    "line": 18,
+    "oldName": "oldVariableName",
+    "newName": "result"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+```
+
+---
+
+## Test Suite 4: Scala Rename Tests
 
 ### Test File
 `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala`
 
-### Test 4.1: Rename Method (Scala)
+### Test 4.1: Rename Class (Scala)
 
-**Operation:** Rename `newMethodName` to `renamedMethod`
+**Operation:** Rename class `SampleCalculator` to `Calculator`
 
 **API Call:**
 ```bash
@@ -137,14 +461,11 @@ curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
   -d '{
     "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
-    "line": 7,
-    "oldName": "newMethodName",
-    "newName": "renamedMethod"
+    "line": 13,
+    "oldName": "SampleCalculator",
+    "newName": "Calculator"
   }'
 ```
-
-**Verification:**
-- Compare with `src/test/resources/expected/scala/SampleClass_afterRename.scala`
 
 **Revert:**
 ```bash
@@ -153,41 +474,105 @@ git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/Samp
 
 ---
 
-## Automated Test Runner
+### Test 4.2: Rename Field (Scala)
 
-To run all tests sequentially:
+**Operation:** Rename field `oldFieldName` to `counter`
 
+**API Call:**
 ```bash
-#!/bin/bash
-# Test all rename operations
-echo "Testing Kotlin rename..."
 curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
   -H "Content-Type: application/json" \
-  -d '{"filePath":"src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt","line":13,"oldName":"newMethodName","newName":"renamedMethod"}'
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
+    "line": 15,
+    "oldName": "oldFieldName",
+    "newName": "counter"
+  }'
+```
 
-echo -e "\n\nTesting JavaScript rename..."
-curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
-  -H "Content-Type: application/json" \
-  -d '{"filePath":"src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js","line":7,"oldName":"newMethodName","newName":"renamedMethod"}'
-
-echo -e "\n\nTesting TypeScript rename..."
-curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
-  -H "Content-Type: application/json" \
-  -d '{"filePath":"src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts","line":7,"oldName":"newMethodName","newName":"renamedMethod"}'
-
-echo -e "\n\nTesting Scala rename..."
-curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
-  -H "Content-Type: application/json" \
-  -d '{"filePath":"src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala","line":7,"oldName":"newMethodName","newName":"renamedMethod"}'
-
-echo -e "\n\n✅ All tests complete. Review results and revert changes with: git checkout src/test/"
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
 ```
 
 ---
 
-## Notes
+### Test 4.3: Rename Method (Scala)
 
-- All rename operations use IntelliJ's native refactoring engine
-- The plugin properly handles threading (EDT, read actions, write actions)
-- Test files are located in `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/`
-- Always revert test files after testing to maintain clean state
+**Operation:** Rename method `oldMethodName` to `calculate`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
+    "line": 18,
+    "oldName": "oldMethodName",
+    "newName": "calculate"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
+```
+
+---
+
+### Test 4.4: Rename Parameter (Scala)
+
+**Operation:** Rename parameter `oldParameterName` to `value`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
+    "line": 18,
+    "oldName": "oldParameterName",
+    "newName": "value"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
+```
+
+---
+
+### Test 4.5: Rename Local Variable (Scala)
+
+**Operation:** Rename local variable `oldVariableName` to `result`
+
+**API Call:**
+```bash
+curl -X POST http://localhost:8767/intellij-control-server/refactor/rename \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala",
+    "line": 20,
+    "oldName": "oldVariableName",
+    "newName": "result"
+  }'
+```
+
+**Revert:**
+```bash
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
+```
+
+---
+
+## Summary
+
+This test plan covers **20 test cases** across 4 languages:
+- **5 symbol types**: Class, Field, Method, Parameter, Local Variable
+- **4 languages**: Kotlin, JavaScript, TypeScript, Scala
+
+Each test verifies that IntelliJ's rename refactoring engine correctly:
+1. Renames the symbol at the specified location
+2. Updates all references to that symbol
+3. Returns accurate metadata (files changed, change count)
