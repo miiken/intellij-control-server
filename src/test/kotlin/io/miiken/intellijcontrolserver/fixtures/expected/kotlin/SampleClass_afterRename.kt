@@ -7,7 +7,7 @@ package io.miiken.intellijcontrolserver.fixtures.kotlin
  * - A method to rename (marked with RENAME THIS)
  * - A method with extractable code (marked with EXTRACT START/END)
  */
-class SampleCalculator {
+class SampleClass {
     
     // RENAME THIS - Test renaming this method
     fun newMethodName(value: Int): Int {
