@@ -1,6 +1,6 @@
 # Refactoring Testing Workflow
 
-This rule guides automated testing of IntelliJ Control Server refactoring operations using the TEST_PLAN.md.
+This rule guides automated testing of IntelliJ Control Server rename refactoring operations using the TEST_PLAN.md.
 
 ## Pre-Test Setup
 
@@ -8,19 +8,19 @@ Before starting any tests, ensure test files are clean:
 
 ```bash
 # Check status of test files
-git status src/test/resources/testdata/
+git status src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/
 
 # If any test files are modified, revert them
-git checkout src/test/resources/testdata/kotlin/SampleClass.kt
-git checkout src/test/resources/testdata/javascript/SampleClass.js
-git checkout src/test/resources/testdata/typescript/SampleClass.ts
-git checkout src/test/resources/testdata/scala/SampleClass.scala
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/javascript/SampleClass.js
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/typescript/SampleClass.ts
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/scala/SampleClass.scala
 
 # Or revert all at once
-git checkout src/test/resources/testdata/*/SampleClass.*
+git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
 
 # Verify they're clean
-git status src/test/resources/testdata/
+git status src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/
 ```
 
 If there are uncommitted changes to production code, stash them:
@@ -38,8 +38,6 @@ git stash push -m "WIP: testing refactorings"
 
 2. **Execute Using MCP Tools**
    - For Rename: Use `intellij_rename_symbol` MCP tool
-   - For Extract Method Analyze: Use `intellij_analyze_extract_method` MCP tool
-   - For Extract Method Execute: Use `intellij_execute_extract_method` MCP tool
    
    **IMPORTANT**: Use the MCP tools, NOT direct HTTP API calls
 
@@ -52,8 +50,8 @@ git stash push -m "WIP: testing refactorings"
    - Compare inline code snippet from TEST_PLAN.md with actual result
    - For thorough verification, diff with expected file:
      ```bash
-     diff src/test/resources/testdata/kotlin/SampleClass.kt \
-          src/test/resources/testdata/expected/kotlin/SampleClass_afterRename.kt
+     diff src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt \
+          src/test/resources/expected/kotlin/SampleClass_afterRename.kt
      ```
 
 5. **If Test Passes**
@@ -76,7 +74,7 @@ git stash push -m "WIP: testing refactorings"
    - Deploy the plugin using the rebuild script
    - **REVERT TEST FILES** before re-running:
      ```bash
-     git checkout src/test/resources/testdata/*/SampleClass.*
+     git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
      ```
    - Re-run the failed test from step 1
    - Repeat until test passes
@@ -87,28 +85,15 @@ Execute tests in this order (as defined in TEST_PLAN.md):
 
 ### Kotlin Tests
 1. Test 1.1: Rename Method (Kotlin)
-2. Test 1.2: Extract Method - Analyze Phase (Kotlin)
-3. Test 1.3: Extract Method - Execute Phase (Kotlin)
 
 ### JavaScript Tests
-4. Test 2.1: Rename Method (JavaScript)
-5. Test 2.2: Extract Method - Analyze Phase (JavaScript)
-6. Test 2.3: Extract Method - Execute Phase (JavaScript)
+2. Test 2.1: Rename Method (JavaScript)
 
 ### TypeScript Tests
-7. Test 3.1: Rename Method (TypeScript)
-8. Test 3.2: Extract Method - Analyze Phase (TypeScript)
-9. Test 3.3: Extract Method - Execute Phase (TypeScript)
+3. Test 3.1: Rename Method (TypeScript)
 
 ### Scala Tests
-10. Test 4.1: Rename Method (Scala)
-11. Test 4.2: Extract Method - Analyze Phase (Scala)
-12. Test 4.3: Extract Method - Execute Phase (Scala)
-
-### Error Scenario Tests
-13. Test E.1: Unsupported Language
-14. Test E.2: Invalid Line Range
-15. Test E.3: File Not Found
+4. Test 4.1: Rename Method (Scala)
 
 ## After All Tests Pass
 
@@ -132,7 +117,7 @@ Execute tests in this order (as defined in TEST_PLAN.md):
 2. **Clean Up Test Files**
    ```bash
    # Revert test files to allow re-running tests
-   git checkout src/test/resources/testdata/*/SampleClass.*
+   git checkout src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/*/SampleClass.*
    
    # Verify clean state
    git status
@@ -148,8 +133,8 @@ Execute tests in this order (as defined in TEST_PLAN.md):
 
 ### ❌ NEVER DO
 - Modify TEST_PLAN.md without user approval
-- Modify expected result files in `testdata/expected/`
-- Modify test input files in `testdata/` except during testing
+- Modify expected result files in `src/test/resources/expected/`
+- Modify test input files in `src/test/kotlin/.../fixtures/` except during testing
 - Commit test file modifications
 - Skip tests or mark them as "assumed passing"
 - Use HTTP API directly instead of MCP tools
@@ -225,20 +210,9 @@ Keep a checklist in your working notes:
 
 - [ ] Pre-test setup complete (files reverted)
 - [ ] Test 1.1 - Kotlin Rename
-- [ ] Test 1.2 - Kotlin Analyze
-- [ ] Test 1.3 - Kotlin Extract
-- [ ] Test 2.1 - JS Rename
-- [ ] Test 2.2 - JS Analyze
-- [ ] Test 2.3 - JS Extract
-- [ ] Test 3.1 - TS Rename
-- [ ] Test 3.2 - TS Analyze
-- [ ] Test 3.3 - TS Extract
+- [ ] Test 2.1 - JavaScript Rename
+- [ ] Test 3.1 - TypeScript Rename
 - [ ] Test 4.1 - Scala Rename
-- [ ] Test 4.2 - Scala Analyze
-- [ ] Test 4.3 - Scala Extract
-- [ ] Test E.1 - Unsupported Language
-- [ ] Test E.2 - Invalid Range
-- [ ] Test E.3 - File Not Found
 - [ ] Bug fixes committed
 - [ ] Test files reverted
 
@@ -249,26 +223,26 @@ TEST: 1.1 - Rename Method (Kotlin)
 
 OPERATION:
 - Tool: intellij_rename_symbol
-- File: src/test/resources/testdata/kotlin/SampleClass.kt
-- Line: 12
-- Old Name: oldMethodName
-- New Name: newMethodName
+- File: src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt
+- Line: 13
+- Old Name: newMethodName
+- New Name: renamedMethod
 
 EXPECTED:
 - Response: {"success": true, "filesChanged": [...], "changesCount": 1}
-- Line 12 changes from "fun oldMethodName" to "fun newMethodName"
+- Line 13 changes from "fun newMethodName" to "fun renamedMethod"
 
 EXECUTE:
 [Call MCP tool with parameters]
 
 VERIFY:
 - Response: ✅ success=true, changesCount=1
-- Inline snippet: ✅ Line 12 shows "fun newMethodName"
-- Full diff: ✅ Only line 12 changed
+- Inline snippet: ✅ Line 13 shows "fun renamedMethod"
+- Full diff: ✅ Only line 13 changed
 
 RESULT: ✅ PASS
 
-Moving to Test 1.2...
+Moving to Test 2.1 (JavaScript)...
 ```
 
 ## When to Ask User
