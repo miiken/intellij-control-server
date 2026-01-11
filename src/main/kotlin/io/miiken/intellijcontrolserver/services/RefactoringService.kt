@@ -304,19 +304,17 @@ object RefactoringService {
         
         val changedFiles = mutableSetOf<String>()
         
-        // Find usages in a read action (can be done on background thread)
-        val processor = RenameProcessor(project, element, newName, false, false)
-        val usages = ReadAction.compute<Array<out com.intellij.usageView.UsageInfo>, RuntimeException> {
-            processor.findUsages()
-        }
-        
-        // Collect changed files
-        usages.mapNotNullTo(changedFiles) { usage ->
-            usage.file?.virtualFile?.path
-        }
-        
-        // Execute the actual rename on EDT
+        // Execute rename on EDT (required by RenameProcessor)
         ApplicationManager.getApplication().invokeAndWait {
+            val processor = RenameProcessor(project, element, newName, false, false)
+            
+            // Find usages (this internally handles read actions)
+            val usages = processor.findUsages()
+            usages.mapNotNullTo(changedFiles) { usage ->
+                usage.file?.virtualFile?.path
+            }
+            
+            // Execute the rename
             processor.run()
         }
         
