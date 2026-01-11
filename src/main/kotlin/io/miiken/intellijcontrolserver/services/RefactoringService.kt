@@ -304,17 +304,21 @@ object RefactoringService {
         
         val changedFiles = mutableSetOf<String>()
         
-        // Execute rename on EDT (required by RenameProcessor)
+        // Create processor and find usages in ReadAction (required for PSI access)
+        val processor = ReadAction.compute<RenameProcessor, RuntimeException> {
+            RenameProcessor(project, element, newName, false, false)
+        }
+        
+        val usages = ReadAction.compute<Array<out com.intellij.usageView.UsageInfo>, RuntimeException> {
+            processor.findUsages()
+        }
+        
+        usages.mapNotNullTo(changedFiles) { usage ->
+            usage.file?.virtualFile?.path
+        }
+        
+        // Execute the actual rename on EDT (UI operation)
         ApplicationManager.getApplication().invokeAndWait {
-            val processor = RenameProcessor(project, element, newName, false, false)
-            
-            // Find usages (this internally handles read actions)
-            val usages = processor.findUsages()
-            usages.mapNotNullTo(changedFiles) { usage ->
-                usage.file?.virtualFile?.path
-            }
-            
-            // Execute the rename
             processor.run()
         }
         

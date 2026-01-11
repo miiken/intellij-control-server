@@ -10,7 +10,7 @@ package io.miiken.intellijcontrolserver.fixtures.kotlin
 class SampleClass {
     
     // RENAME THIS - Test renaming this method
-    fun oldMethodName(value: Int): Int {
+    fun newMethodName(value: Int): Int {
         return value * 2
     }
     
