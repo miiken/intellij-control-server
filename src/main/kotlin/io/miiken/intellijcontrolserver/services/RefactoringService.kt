@@ -4,6 +4,7 @@ import com.intellij.lang.Language
 import com.intellij.openapi.application.ApplicationManager
 import com.intellij.openapi.application.ReadAction
 import com.intellij.openapi.command.WriteCommandAction
+import com.intellij.openapi.command.CommandProcessor
 import com.intellij.openapi.fileEditor.FileDocumentManager
 import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
@@ -304,7 +305,8 @@ object RefactoringService {
         
         val changedFiles = mutableSetOf<String>()
         
-        // Create processor and find usages in ReadAction (required for PSI access)
+        // Create processor and find usages on background thread with ReadAction
+        // This allows Kotlin analysis to run properly (can't run on EDT)
         val processor = ReadAction.compute<RenameProcessor, RuntimeException> {
             RenameProcessor(project, element, newName, false, false)
         }
@@ -317,7 +319,7 @@ object RefactoringService {
             usage.file?.virtualFile?.path
         }
         
-        // Execute the actual rename on EDT (UI operation)
+        // Execute the refactoring on EDT (but NOT in write action - it handles that internally)
         ApplicationManager.getApplication().invokeAndWait {
             processor.run()
         }
