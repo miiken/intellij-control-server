@@ -7,18 +7,45 @@
     <description><![CDATA[
     A lightweight IntelliJ IDEA plugin that exposes IDE capabilities via a local HTTP API.
     
-    <h3>Features</h3>
+    <h3>✅ Available Now</h3>
     <ul>
-        <li><strong>Tasks & Context Management</strong>: Manage IntelliJ tasks and editor contexts via API</li>
-        <li><strong>Refactoring Operations</strong>: Trigger rename, extract method, move class, and other refactorings</li>
-        <li><strong>Navigation</strong>: Open files, jump to definitions, find usages programmatically</li>
-        <li><strong>AI-Friendly</strong>: Perfect for integration with AI coding assistants like Cursor</li>
+        <li><strong>Refactoring:</strong>
+            <ul>
+                <li><strong>Rename Symbols</strong>: Rename variables, methods, classes, and parameters across your entire project with IntelliJ's powerful refactoring engine. Works with all languages supported by IntelliJ.</li>
+            </ul>
+        </li>
+        <li><strong>HTTP REST API</strong>: Local server (default port 8765) with comprehensive OpenAPI documentation</li>
+        <li><strong>MCP Integration</strong>: Native Model Context Protocol support for AI assistants (Cursor, Claude Desktop)</li>
+        <li><strong>Auto-start</strong>: Starts automatically when IntelliJ opens, with configurable settings</li>
+        <li><strong>Health Monitoring</strong>: Real-time status endpoint to verify plugin connectivity</li>
+    </ul>
+    
+    <h3>🚀 Coming Soon</h3>
+    <ul>
+        <li><strong>More Refactorings</strong>: Move class, inline variable, change signature (v1.2+)</li>
+        <li><strong>Navigation API</strong>: Jump to definitions, find usages, search symbols (v1.2+)</li>
+        <li><strong>Tasks & Context</strong>: Manage IntelliJ tasks and editor contexts programmatically (v1.3+)</li>
     </ul>
     
     <h3>How it Works</h3>
     <p>
     The plugin runs a local HTTP server (default: http://localhost:8765) that accepts JSON requests.
     This enables external tools to control IntelliJ operations without manual intervention.
+    </p>
+    
+    <h3>Installation & Setup</h3>
+    <p>
+    After installing the plugin and restarting IntelliJ, configure your AI assistant (e.g., Cursor) by adding this to your <code>mcp.json</code> file:
+    </p>
+    <pre><code>{
+  "mcpServers": {
+    "intellij": {
+      "command": "~/.intellij-mcp-bridge/bridge.sh"
+    }
+  }
+}</code></pre>
+    <p>
+    The MCP bridge is automatically installed on first startup. No additional setup required!
     </p>
     
     <h3>Security</h3>
@@ -44,13 +71,13 @@
         <li><strong>Type-Safe API</strong>: All endpoints return strongly-typed data classes</li>
         <li><strong>AI-Friendly</strong>: Designed for integration with AI coding tools like Cursor</li>
     </ul>
-    <p><em>Note: Extract method API is planned for v1.1</em></p>
     ]]></change-notes>
 
     <!-- Plugin depends on IntelliJ Platform modules -->
     <depends>com.intellij.modules.platform</depends>
     <depends>com.intellij.modules.java</depends>
     <depends>com.intellij.tasks</depends>
+    <depends optional="true">org.jetbrains.kotlin</depends>
 
     <!-- Extension points and services -->
     <extensions defaultExtensionNs="com.intellij">
