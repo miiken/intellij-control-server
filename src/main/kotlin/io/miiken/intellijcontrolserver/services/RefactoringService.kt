@@ -86,6 +86,27 @@ object RefactoringService {
                         processor.findUsages()
                     }
 
+                    // Check if any usages were found before attempting rename
+                    val usagesCount = processor.usages.size
+                    if (usagesCount == 0) {
+                        logger.warn("No usages found for rename: ${request.oldName} at ${request.filePath}:${request.line}")
+                        resultRef.set(RefactoringResult(
+                            success = false,
+                            error = RefactoringError(
+                                "NO_USAGES_FOUND",
+                                "No renameable usages found for '${request.oldName}' at line ${request.line}. The element may not be renameable or may not exist at the specified location.",
+                                mapOf(
+                                    "filePath" to request.filePath,
+                                    "line" to request.line,
+                                    "elementName" to request.oldName
+                                )
+                            )
+                        ))
+                        return@executeOnPooledThread
+                    }
+                    
+                    logger.info("Found ${usagesCount} usage(s) to rename for '${request.oldName}'")
+                    
                     // Execute the actual rename on EDT within a command
                     ApplicationManager.getApplication().invokeAndWait {
                         CommandProcessor.getInstance().executeCommand(project, {
@@ -99,20 +120,31 @@ object RefactoringService {
                         }, "Rename ${request.oldName} to ${request.newName}", null)
                     }
 
-                    // Collect affected files
-                    val affectedFiles = mutableListOf<String>()
-                    val virtualFile = psiFile.virtualFile
-                    if (virtualFile != null) {
-                        affectedFiles.add(virtualFile.path)
+                    // Collect affected files from actual usages
+                    val affectedFiles = processor.usages
+                        .mapNotNull { it.file?.virtualFile?.path }
+                        .distinct()
+                    
+                    if (affectedFiles.isEmpty()) {
+                        logger.warn("Rename completed but no files were changed")
+                        resultRef.set(RefactoringResult(
+                            success = false,
+                            error = RefactoringError(
+                                "NO_FILES_CHANGED",
+                                "Rename processor ran but no files were modified. This may indicate an internal error.",
+                                mapOf("usagesFound" to usagesCount)
+                            )
+                        ))
+                        return@executeOnPooledThread
                     }
 
                     resultRef.set(RefactoringResult(
                         success = true,
                         filesChanged = affectedFiles,
-                        changesCount = 1 // Simplified count
+                        changesCount = usagesCount
                     ))
                     
-                    logger.info("Rename successful: ${request.oldName} -> ${request.newName}")
+                    logger.info("Rename successful: ${request.oldName} -> ${request.newName}, ${usagesCount} changes in ${affectedFiles.size} file(s)")
                 } catch (e: ProcessCanceledException) {
                     throw e
                 } catch (e: Exception) {
