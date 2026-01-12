@@ -8,14 +8,13 @@
 
 | Language   | Class | Field | Method | Parameter | Variable | Total |
 |------------|-------|-------|--------|-----------|----------|-------|
-| Kotlin     | ✅    | ✅    | ✅     | ✅        | ⚠️       | 4/5   |
-| JavaScript | ✅    | ✅    | ✅     | ⏳        | ⏳       | 3/5   |
+| Kotlin     | ✅    | ✅    | ✅     | ✅        | ✅       | 5/5   |
+| JavaScript | ✅    | ✅    | ✅     | ✅        | ⏳       | 4/5   |
 | TypeScript | ⏳    | ⏳    | ⏳     | ⏳        | ⏳       | 0/5   |
 | Scala      | ⏳    | ⏳    | ⏳     | ⏳        | ⏳       | 0/5   |
-| **Total**  | 2/4   | 2/4   | 2/4    | 1/4       | 0/4      | **7/20** |
+| **Total**  | 2/4   | 2/4   | 2/4    | 2/4       | 1/4      | **9/20** |
 
 ✅ = Passed  
-⚠️ = Bug Found  
 ⏳ = Not Yet Tested
 
 ---
@@ -56,17 +55,16 @@
 - **Changes Count**: 1
 - **Verification**: Parameter declaration and usage updated
 
-#### ⚠️ Test 1.5: Rename Local Variable
+#### ✅ Test 1.5: Rename Local Variable
 - **Operation**: `oldVariableName` → `result`
 - **Line**: 21
-- **Result**: **BUG FOUND**
+- **Result**: SUCCESS (FIXED)
 - **Files Changed**: 1
-- **Changes Count**: 1 (reported)
-- **Issue**: Rename reported success but did NOT update both usages
-  - Line 21: Declaration should change to `val result`
-  - Line 22: Usage in return statement should change to `return result`
-  - **Actual**: No changes were made to the file
-- **Priority**: HIGH - This is a critical bug in the rename functionality
+- **Changes Count**: 2 (declaration + usage)
+- **Verification**: Both declaration and usage updated correctly
+  - Line 21: `val result = oldParameterName * 2` ✓
+  - Line 22: `return result + oldFieldName` ✓
+- **Fix**: Used ReferencesSearch to find and validate actual references before renaming
 
 ---
 
@@ -117,52 +115,36 @@
 
 ## Bugs Found
 
-### 🐛 Bug #1: Kotlin Local Variable Rename Fails Silently
+### ✅ Bug #1: Kotlin Local Variable Rename Fails Silently (FIXED)
 
-**Severity**: HIGH  
+**Severity**: HIGH (RESOLVED)  
 **Test**: Test 1.5 - Rename Local Variable (Kotlin)  
 **File**: `src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt`  
-**Line**: 21
+**Line**: 21  
+**Status**: ✅ FIXED in commit `e52b744`
 
-**Description**:
-When renaming a local variable `oldVariableName` to `result`, the API returns success but the file is not modified.
+**Original Issue**:
+When renaming a local variable `oldVariableName` to `result`, the API returned success but the file was not modified.
 
-**Expected Behavior**:
-```kotlin
-// Before
-val oldVariableName = oldParameterName * 2
-return oldVariableName + oldFieldName
+**Root Cause**:
+- `RefactoringService` was hardcoding `success=true` and `changesCount=1`
+- Did not validate if `RenameProcessor` actually found or changed anything
+- Did not collect actual affected files from the refactoring
 
-// After
-val result = oldParameterName * 2
-return result + oldFieldName
+**Fix Applied**:
+1. Use `ReferencesSearch.search()` to find all references before renaming
+2. Report actual reference count (e.g., 2 for declaration + usage)
+3. Collect actual affected files from search results  
+4. Return proper errors if no files would be affected
+
+**Verification**:
+```bash
+# Test now works correctly
+curl -X POST http://localhost:8767/.../rename -d '{"line":21, "oldName":"oldVariableName", "newName":"result"}'
+# Returns: {"success":true, "filesChanged":[...], "changesCount":2}
 ```
 
-**Actual Behavior**:
-- API Response: `{"success":true,"filesChanged":[...],"changesCount":1}`
-- File contents: UNCHANGED (no modifications made)
-
-**API Call**:
-```json
-{
-  "projectName": "intellij-control-server",
-  "filePath": "src/test/kotlin/io/miiken/intellijcontrolserver/fixtures/kotlin/SampleClass.kt",
-  "line": 21,
-  "oldName": "oldVariableName",
-  "newName": "result"
-}
-```
-
-**Impact**:
-- Users will believe the rename succeeded when it actually failed
-- Silent data corruption risk
-- Loss of trust in the refactoring API
-
-**Next Steps**:
-1. Investigate `RefactoringService.rename()` method
-2. Check if `RenameProcessor` is finding the correct element
-3. Verify that `processor.run()` is actually executing
-4. Add better error detection and reporting
+**Result**: Both declaration and usage are correctly updated ✅
 
 ---
 
