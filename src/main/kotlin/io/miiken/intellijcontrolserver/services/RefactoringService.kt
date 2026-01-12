@@ -8,6 +8,7 @@ import com.intellij.openapi.progress.ProcessCanceledException
 import com.intellij.openapi.project.Project
 import com.intellij.psi.PsiDocumentManager
 import com.intellij.psi.PsiElement
+import com.intellij.psi.search.searches.ReferencesSearch
 import com.intellij.refactoring.rename.RenameProcessor
 import io.miiken.intellijcontrolserver.models.RefactoringError
 import io.miiken.intellijcontrolserver.models.RefactoringResult
@@ -77,6 +78,40 @@ object RefactoringService {
             // Execute rename on a background thread (for findUsages) then EDT (for actual rename)
             ApplicationManager.getApplication().executeOnPooledThread {
                 try {
+                    // Find all references to the element first
+                    val references = ApplicationManager.getApplication().runReadAction<List<com.intellij.psi.PsiReference>> {
+                        ReferencesSearch.search(element).findAll().toList()
+                    }
+                    
+                    val referencesCount = references.size + 1 // +1 for the declaration itself
+                    logger.info("Found ${referencesCount} reference(s) (including declaration) for '${request.oldName}'")
+                    
+                    // Collect files that will be affected
+                    val affectedFiles = references
+                        .mapNotNull { it.element.containingFile?.virtualFile?.path }
+                        .toMutableSet()
+                        .apply {
+                            // Add the file containing the declaration
+                            psiFile.virtualFile?.path?.let { add(it) }
+                        }
+                        .toList()
+                    
+                    if (affectedFiles.isEmpty()) {
+                        logger.warn("No files to modify for rename: ${request.oldName}")
+                        resultRef.set(RefactoringResult(
+                            success = false,
+                            error = RefactoringError(
+                                "NO_FILES_TO_MODIFY",
+                                "Could not determine which files would be affected by renaming '${request.oldName}'",
+                                mapOf(
+                                    "filePath" to request.filePath,
+                                    "line" to request.line
+                                )
+                            )
+                        ))
+                        return@executeOnPooledThread
+                    }
+                    
                     // Create rename processor and find usages (can run in background)
                     val processor = ApplicationManager.getApplication().runReadAction<RenameProcessor> {
                         RenameProcessor(project, element, request.newName, false, false)
@@ -85,27 +120,6 @@ object RefactoringService {
                     ApplicationManager.getApplication().runReadAction<Unit> {
                         processor.findUsages()
                     }
-
-                    // Check if any usages were found before attempting rename
-                    val usagesCount = processor.usages.size
-                    if (usagesCount == 0) {
-                        logger.warn("No usages found for rename: ${request.oldName} at ${request.filePath}:${request.line}")
-                        resultRef.set(RefactoringResult(
-                            success = false,
-                            error = RefactoringError(
-                                "NO_USAGES_FOUND",
-                                "No renameable usages found for '${request.oldName}' at line ${request.line}. The element may not be renameable or may not exist at the specified location.",
-                                mapOf(
-                                    "filePath" to request.filePath,
-                                    "line" to request.line,
-                                    "elementName" to request.oldName
-                                )
-                            )
-                        ))
-                        return@executeOnPooledThread
-                    }
-                    
-                    logger.info("Found ${usagesCount} usage(s) to rename for '${request.oldName}'")
                     
                     // Execute the actual rename on EDT within a command
                     ApplicationManager.getApplication().invokeAndWait {
@@ -120,31 +134,13 @@ object RefactoringService {
                         }, "Rename ${request.oldName} to ${request.newName}", null)
                     }
 
-                    // Collect affected files from actual usages
-                    val affectedFiles = processor.usages
-                        .mapNotNull { it.file?.virtualFile?.path }
-                        .distinct()
-                    
-                    if (affectedFiles.isEmpty()) {
-                        logger.warn("Rename completed but no files were changed")
-                        resultRef.set(RefactoringResult(
-                            success = false,
-                            error = RefactoringError(
-                                "NO_FILES_CHANGED",
-                                "Rename processor ran but no files were modified. This may indicate an internal error.",
-                                mapOf("usagesFound" to usagesCount)
-                            )
-                        ))
-                        return@executeOnPooledThread
-                    }
-
                     resultRef.set(RefactoringResult(
                         success = true,
                         filesChanged = affectedFiles,
-                        changesCount = usagesCount
+                        changesCount = referencesCount
                     ))
                     
-                    logger.info("Rename successful: ${request.oldName} -> ${request.newName}, ${usagesCount} changes in ${affectedFiles.size} file(s)")
+                    logger.info("Rename successful: ${request.oldName} -> ${request.newName}, ${referencesCount} changes in ${affectedFiles.size} file(s)")
                 } catch (e: ProcessCanceledException) {
                     throw e
                 } catch (e: Exception) {
