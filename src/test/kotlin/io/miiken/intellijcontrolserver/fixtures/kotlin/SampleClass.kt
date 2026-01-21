@@ -1,5 +1,8 @@
 package io.miiken.intellijcontrolserver.fixtures.kotlin
 
+import org.slf4j.LoggerFactory
+import io.micrometer.core.annotation.Timed
+
 /**
  * Sample Kotlin class for testing refactoring operations.
  * 
@@ -14,9 +17,13 @@ class SampleCalculator {
     
     // RENAME THIS - Test renaming this field
     private var oldFieldName: Int = 10
+
+    private val logger = LoggerFactory.getLogger(javaClass)
     
     // RENAME THIS - Test renaming this method
+    @Timed("metrics.timer.oldMethodName")
     fun oldMethodName(oldParameterName: Int): Int {
+        logger.info("oldMethodName: $oldParameterName")
         // RENAME THIS - Test renaming this local variable
         val oldVariableName = oldParameterName * 2
         return oldVariableName + oldFieldName

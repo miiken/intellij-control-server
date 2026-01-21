@@ -41,6 +41,12 @@ dependencies {
     // Kotlinx coroutines - use version compatible with IntelliJ 2024.3
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.0")
+    
+    // Micrometer for test fixtures (Timed annotation)
+    testImplementation("io.micrometer:micrometer-core:1.12.5")
+    
+    // SLF4J for test fixtures (LoggerFactory)
+    testImplementation("org.slf4j:slf4j-api:2.0.9")
 }
 
 intellij {

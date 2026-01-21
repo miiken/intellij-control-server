@@ -112,9 +112,22 @@ object RefactoringService {
                         return@executeOnPooledThread
                     }
                     
+                    // Determine if we should search in strings and comments
+                    // For methods/functions, default to true (unless explicitly disabled)
+                    // This ensures @Timed annotations and logger strings are updated
+                    val isMethod = ApplicationManager.getApplication().runReadAction<Boolean> {
+                        PsiUtils.isMethod(element)
+                    }
+                    
+                    val searchInComments = isMethod // Update comments for methods
+                    val searchInStrings = request.searchInStrings 
+                        ?: isMethod // Default to true for methods, false for others
+                    
+                    logger.info("Rename settings: isMethod=$isMethod, searchInComments=$searchInComments, searchInStrings=$searchInStrings")
+                    
                     // Create rename processor and find usages (can run in background)
                     val processor = ApplicationManager.getApplication().runReadAction<RenameProcessor> {
-                        RenameProcessor(project, element, request.newName, false, false)
+                        RenameProcessor(project, element, request.newName, searchInComments, searchInStrings)
                     }
                     
                     ApplicationManager.getApplication().runReadAction<Unit> {
