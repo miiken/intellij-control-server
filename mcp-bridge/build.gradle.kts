@@ -15,6 +15,10 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation("com.github.briandilley.jsonrpc4j:jsonrpc4j:1.6")
     
+    // SLF4J implementation for standalone bridge (not needed in IntelliJ plugin)
+    implementation("org.slf4j:slf4j-api:1.7.36")
+    implementation("org.slf4j:slf4j-simple:1.7.36")
+    
     testImplementation(kotlin("test"))
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.1")
