@@ -47,7 +47,7 @@ The config looks like this (FIXED for everyone):
 {
   "mcpServers": {
     "intellij": {
-      "command": "/Users/YOUR_USERNAME/.intellij-mcp-bridge/bridge.sh"
+      "command": "~/.intellij-mcp-bridge/bridge.sh"
     }
   }
 }
